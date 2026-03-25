@@ -1,0 +1,45 @@
+[project]
+name = "ai-autonomous-engineer"
+version = "0.1.0"
+description = "Autonomous AI engineer that learns, validates, applies, and evolves knowledge"
+readme = "plan.md"
+requires-python = ">=3.11"
+dependencies = [
+    # LLM backends
+    "httpx>=0.26.0",
+    "openai>=1.10.0",
+
+    # Knowledge store
+    "chromadb>=0.4.22",
+    "sentence-transformers>=2.3.1",
+
+    # Web knowledge collection (from Scrapling)
+    "scrapling>=0.2.9",
+
+    # Config & data modeling
+    "pydantic>=2.0",
+    "pydantic-settings>=2.1.0",
+    "python-dotenv>=1.0.0",
+
+    # CLI & display
+    "rich>=13.0",
+    "typer>=0.9.0",
+
+    # Utilities
+    "aiofiles>=23.2.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["agent"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
