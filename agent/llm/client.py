@@ -96,6 +96,7 @@ class LLMClient:
                 "model": model,
                 "prompt": prompt,
                 "stream": False,
+                "format": "json",
                 "options": {
                     "temperature": temperature,
                     "num_predict": max_tokens,
@@ -107,7 +108,7 @@ class LLMClient:
             response = await client.post(
                 f"{self.settings.ollama_base_url}/api/generate",
                 json=payload,
-                timeout=120,
+                timeout=300,
             )
             response.raise_for_status()
             return response.json().get("response", "")
