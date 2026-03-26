@@ -9,9 +9,11 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 
+import numpy as np
+
 from agent.config import get_settings
 from agent.llm.helpers import llm_complete_json
-from agent.llm.prompts import KNOWLEDGE_EXTRACTOR
+from agent.llm.prompts import KNOWLEDGE_EXTRACTOR, KNOWLEDGE_VERIFIER
 from agent.modules.pre_validator import LearningContract
 from agent.services.embedder import get_embedder
 from agent.services.web_scraper import scrape_page
@@ -70,16 +72,22 @@ class KnowledgeCollector:
             raw.source_count += 1
         else:
             # 2 & 3. Fetch and extract
+            from agent.services.chunker import get_chunker
+            chunker = get_chunker()
+            
             for url in urls:
                 content = scrape_page(url)
                 if not content:
                     continue
                     
-                logger.info(f"🧠 Extracting primitives from: {url}")
-                extracted = await self._extract_from_llm(
-                    contract.resolved_domain, contract.topic, content
-                )
-                self._merge_knowledge(raw, extracted)
+                chunks = chunker.chunk_text(content)
+                logger.info(f"🧠 Extracting primitives from {len(chunks)} chunks of: {url}")
+                
+                for chunk in chunks:
+                    extracted = await self._extract_from_llm(
+                        contract.resolved_domain, contract.topic, chunk
+                    )
+                    self._merge_knowledge(raw, extracted)
                 raw.source_count += 1
 
         # 4. Apply semantic entropy filter
@@ -98,13 +106,33 @@ class KnowledgeCollector:
         return await self.collect(contract)
 
     async def _extract_from_llm(self, domain: str, topic: str, content: str) -> dict:
-        """Use LLM to extract structured knowledge from content."""
+        """Use LLM to extract structured knowledge iteratively."""
         prompt = KNOWLEDGE_EXTRACTOR.format(
             topic=topic,
             domain=domain,
             content=content,
         )
-        return await llm_complete_json(prompt)
+        extracted = await llm_complete_json(prompt)
+        
+        # Iterative verification loop (up to 2 more times)
+        max_attempts = 2
+        for _ in range(max_attempts):
+            verify_prompt = KNOWLEDGE_VERIFIER.format(
+                content=content,
+                extracted=str(extracted)
+            )
+            verification = await llm_complete_json(verify_prompt)
+            if verification.get("all_extracted", True):
+                break
+                
+            # Merge missed knowledge
+            for key in ["definitions", "invariants", "constraints", "edge_cases", "failure_scenarios", "code_patterns"]:
+                if key in verification and isinstance(verification[key], list):
+                    if key not in extracted:
+                        extracted[key] = []
+                    extracted[key].extend(verification[key])
+                    
+        return extracted
 
     def _merge_knowledge(self, raw: RawKnowledge, extracted: dict) -> None:
         """Merge extracted data into raw knowledge."""

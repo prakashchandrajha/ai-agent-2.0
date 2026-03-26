@@ -166,6 +166,31 @@ class EKUStore:
             "domains": list(set(m["domain"] for m in self._index.values())),
         }
 
+    def rollback_eku(self, eku_id: str) -> None:
+        """Evolutionary rollback: delete an EKU and all its dependents recursively."""
+        eku = self.load_eku(eku_id)
+        if not eku:
+            return
+            
+        # 1. Rollback all parent EKUs (dependents)
+        for parent_id in eku.parent_ekus:
+            self.rollback_eku(parent_id)
+            
+        # 2. Delete the EKU itself
+        file_path = self._store_path / f"{eku_id}.json"
+        quarantine_path = self._quarantine_path / f"{eku_id}.json"
+        
+        if file_path.exists():
+            file_path.unlink()
+        if quarantine_path.exists():
+            quarantine_path.unlink()
+            
+        if eku_id in self._index:
+            del self._index[eku_id]
+            self._save_index()
+            
+        logger.warning(f"⏪ Rolled back EKU {eku_id} ({eku.concept})")
+
     # ── Index management ─────────────────────────────────────────
 
     def _load_index(self) -> dict:

@@ -72,6 +72,33 @@ Return JSON:
 }}"""
 
 
+KNOWLEDGE_VERIFIER = """You are a verification engine.
+You just extracted knowledge from a source text.
+Did you extract ALL the structured knowledge primitives (definitions, invariants, constraints, edge cases, failure scenarios, code patterns) present in the text?
+
+Original Text:
+{content}
+
+Extracted so far:
+{extracted}
+
+If you already extracted everything, return:
+{{
+    "all_extracted": true
+}}
+If there is still knowledge in the text that you missed, extract it now.
+Return JSON:
+{{
+    "all_extracted": false,
+    "definitions": ["missed definitions"],
+    "invariants": ["missed invariants"],
+    "constraints": ["missed constraints"],
+    "edge_cases": ["missed edge cases"],
+    "failure_scenarios": ["missed failure scenarios"],
+    "code_patterns": ["missed code patterns"]
+}}"""
+
+
 SELF_VERIFIER_CHALLENGE = """You are a knowledge adversary.
 Your job is to CHALLENGE and find HOLES in the following knowledge.
 

@@ -70,6 +70,8 @@ class Settings:
         self.logs_path: str = _env("LOGS_PATH", "./data/logs")
 
         # ── Learning Parameters ─────────────────────────────────
+        self.chunk_size: int = _env_int("CHUNK_SIZE", 500)
+        self.chunk_overlap: int = _env_int("CHUNK_OVERLAP", 50)
         self.max_sources: int = _env_int("MAX_SOURCES", 5)
         self.entropy_threshold: float = _env_float("ENTROPY_THRESHOLD", 0.92)
         self.min_confidence_to_store: float = _env_float("MIN_CONFIDENCE_TO_STORE", 0.80)

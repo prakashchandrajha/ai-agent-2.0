@@ -114,6 +114,7 @@ class ExecutableKnowledgeUnit:
 
     # 6. DEPENDENCIES
     dependencies: list[str] = field(default_factory=list)  # EKU IDs this depends on
+    parent_ekus: list[str] = field(default_factory=list)   # EKU IDs that depend on this
     prerequisites: list[str] = field(default_factory=list)  # Topic names needed first
 
     # 7. CROSS-LANGUAGE generalization
@@ -235,6 +236,7 @@ class ExecutableKnowledgeUnit:
             "created_at": self.created_at.isoformat(),
             "version": self.version,
             "dependencies": self.dependencies,
+            "parent_ekus": self.parent_ekus,
             "prerequisites": self.prerequisites,
         }
 
@@ -254,6 +256,7 @@ class ExecutableKnowledgeUnit:
             quarantine_reason=data.get("quarantine_reason", []),
             version=data.get("version", 1),
             dependencies=data.get("dependencies", []),
+            parent_ekus=data.get("parent_ekus", []),
             prerequisites=data.get("prerequisites", []),
         )
 
