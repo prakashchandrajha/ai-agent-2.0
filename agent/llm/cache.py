@@ -2,6 +2,7 @@ import hashlib
 import json
 import logging
 import os
+import time
 from pathlib import Path
 from typing import Any
 
@@ -67,7 +68,7 @@ class LLMCache:
                 "model": model,
                 "prompt": prompt,
                 "response": response,
-                "timestamp": os.path.getmtime(os.getcwd()) # placeholder or use time.time()
+                "timestamp": time.time()
             }
             # Use atomic write pattern locally
             import tempfile

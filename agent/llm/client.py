@@ -53,12 +53,13 @@ class LLMClient:
         system_prompt: str | None = None,
         temperature: float = 0.7,
         max_tokens: int = 4096,
+        json_mode: bool = True,
     ) -> str:
         """Generate a complete response (non-streaming)."""
         model = model or self.settings.default_model
         if self.backend == "ollama":
             return await self._generate_ollama(
-                prompt, model, system_prompt, temperature, max_tokens
+                prompt, model, system_prompt, temperature, max_tokens, json_mode
             )
         return await self._generate_openai(
             prompt, model, system_prompt, temperature, max_tokens
@@ -89,19 +90,20 @@ class LLMClient:
 
     async def _generate_ollama(
         self, prompt: str, model: str, system_prompt: str | None,
-        temperature: float, max_tokens: int,
+        temperature: float, max_tokens: int, json_mode: bool = True,
     ) -> str:
         async with httpx.AsyncClient() as client:
             payload: dict[str, Any] = {
                 "model": model,
                 "prompt": prompt,
                 "stream": False,
-                "format": "json",
                 "options": {
                     "temperature": temperature,
                     "num_predict": max_tokens,
                 },
             }
+            if json_mode:
+                payload["format"] = "json"
             if system_prompt:
                 payload["system"] = system_prompt
 

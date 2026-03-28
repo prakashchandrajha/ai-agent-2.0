@@ -23,7 +23,10 @@ FEATURE_FLAGS = {
 
 
 def feature_enabled(name: str) -> bool:
-    """Check if a feature is enabled."""
+    """Check feature flag. Env var overrides config (for testing)."""
+    env_key = f"FEATURE_{name.upper()}"
+    if env_key in os.environ:
+        return os.environ[env_key].lower() in ("true", "1", "yes")
     return FEATURE_FLAGS.get(name, False)
 
 

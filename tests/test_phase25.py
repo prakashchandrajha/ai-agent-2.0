@@ -22,16 +22,22 @@ async def test_chunker():
 
 async def test_dag_rollback():
     print("\n--- Testing DAG Rollback ---")
+    # Reset singleton to avoid stale state from other tests
+    import agent.knowledge.eku_store as eku_mod
+    eku_mod._eku_store = None
     store = get_eku_store()
     
     # Clean up previous
     for f in store._store_path.glob("*.json"):
-        f.unlink()
+        if f.name != "index.json":
+            f.unlink()
     store._index.clear()
+    store._save_index()
         
+    # A is foundation. B depends on A. C depends on B.
     eku_a = ExecutableKnowledgeUnit(concept="Concept A", topic="A")
-    eku_b = ExecutableKnowledgeUnit(concept="Concept B", topic="B", parent_ekus=[eku_a.id])
-    eku_c = ExecutableKnowledgeUnit(concept="Concept C", topic="C", parent_ekus=[eku_b.id])
+    eku_b = ExecutableKnowledgeUnit(concept="Concept B", topic="B", dependencies=[eku_a.id])
+    eku_c = ExecutableKnowledgeUnit(concept="Concept C", topic="C", dependencies=[eku_b.id])
     
     # Store them
     for e in [eku_a, eku_b, eku_c]:
@@ -41,9 +47,9 @@ async def test_dag_rollback():
     print(f"Stored {len(store._index)} EKUs.")
     assert len(store._index) == 3
     
-    # If we rollback C, it should cascade and rollback B and A.
-    print(f"Rolling back C ({eku_c.id})...")
-    store.rollback_eku(eku_c.id)
+    # Rolling back A should cascade DOWNSTREAM: B depends on A, C depends on B → all gone
+    print(f"Rolling back A ({eku_a.id})...")
+    store.rollback_eku(eku_a.id)
     
     print(f"Remaining in store: {len(store._index)}")
     assert len(store._index) == 0, "All dependent EKUs should be rolled back."

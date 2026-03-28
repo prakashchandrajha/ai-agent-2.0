@@ -10,18 +10,30 @@ from dataclasses import dataclass, field
 from agent.knowledge.eku_schema import TestResult
 from agent.llm.helpers import llm_complete_json
 from agent.llm.prompts import CODE_GENERATOR_PROMPT, ASSERTION_GENERATOR_PROMPT
+from agent.modules.code_validator import validate_code
 from agent.modules.verifier import VerificationResult
 from agent.sandbox.runner import SandboxResult, get_sandbox
 
 logger = logging.getLogger(__name__)
 
 
+@dataclass
 class ExecutionResults:
     """Results of execution-based learning."""
     passed: list[TestResult] = field(default_factory=list)
     failed: list[TestResult] = field(default_factory=list)
     crashes: list[TestResult] = field(default_factory=list)
     total_execution_time_ms: float = 0.0
+
+    @property
+    def pass_rate(self) -> float:
+        total = len(self.passed) + len(self.failed) + len(self.crashes)
+        return len(self.passed) / total if total else 0.0
+
+    @property
+    def all_results(self) -> list[TestResult]:
+        return self.passed + self.failed + self.crashes
+
 
 def verify_assertion_uses_actual_output(assertions: str, actual_output: str) -> bool:
     """Verify assertions reference the real output not a contradicting value."""
@@ -49,15 +61,6 @@ def verify_assertion_uses_actual_output(assertions: str, actual_output: str) -> 
         # Unparseable assertions contradict reality by being broken
         return False
     return True
-
-    @property
-    def pass_rate(self) -> float:
-        total = len(self.passed) + len(self.failed) + len(self.crashes)
-        return len(self.passed) / total if total else 0.0
-
-    @property
-    def all_results(self) -> list[TestResult]:
-        return self.passed + self.failed + self.crashes
 
 
 class ExecutionLearner:
@@ -108,6 +111,21 @@ class ExecutionLearner:
                 expected = test.get("expected_behavior", "")
 
                 if not code:
+                    continue
+
+                # Pre-execution code validation (Task 0.4)
+                validation = validate_code(code)
+                if not validation.is_safe:
+                    logger.warning(f"    🛡️ CODE BLOCKED: {description} — {validation.violations}")
+                    test_result = TestResult(
+                        description=description,
+                        code=code,
+                        category=category,
+                        passed=False,
+                        error=f"Code validation failed: {validation.violations}",
+                        context=f"{category}:{description}",
+                    )
+                    results.failed.append(test_result)
                     continue
 
                 # Run in sandbox (Call 1)

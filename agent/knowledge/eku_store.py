@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from agent.config import get_settings
-from agent.knowledge.eku_schema import ExecutableKnowledgeUnit
+from agent.knowledge.eku_schema import ExecutableKnowledgeUnit, GateDiagnostic
 from agent.utils.file_lock import file_lock, atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -123,17 +123,28 @@ class EKUStore:
     async def _gate_no_contradictions(self, eku: ExecutableKnowledgeUnit) -> bool:
         """New EKU must not contradict existing knowledge.
         
-        Compare confidence of new EKU against existing EKU for same topic.
+        Reject if existing EKU for same topic has confidence > new + 0.15.
+        If new is equal or better, allow replacement and bump version.
         """
         existing = self.find_by_topic(eku.domain, eku.topic)
         if not existing:
             return True
             
-        # Reject if any existing EKU for same topic has higher confidence
-        for other in existing:
-            if other.confidence > eku.confidence:
-                return False
+        best_existing = max(existing, key=lambda e: e.confidence)
+        
+        if best_existing.confidence > eku.confidence + 0.15:
+            eku.gate_diagnostics.append(GateDiagnostic(
+                gate_name="no_contradictions",
+                failure_reason=f"Existing EKU is significantly better ({best_existing.confidence:.2f} vs {eku.confidence:.2f})",
+                actual_value=eku.confidence,
+                required_value=best_existing.confidence,
+                suggested_fix="Run more iterations to improve confidence: MAX_LEARNING_ITERATIONS=5",
+                is_retryable=True,
+            ))
+            return False
                 
+        # New EKU is equal or better — allow replacement, bump version
+        eku.version = best_existing.version + 1
         return True
 
     def _gate_not_overfitted(self, eku: ExecutableKnowledgeUnit) -> bool:

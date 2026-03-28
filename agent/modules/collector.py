@@ -32,23 +32,9 @@ def dedupe_urls_by_domain(urls: list[str], max_per_domain: int = 2) -> list[str]
     """Deduplicate URLs by domain, prioritizing high authority links."""
     from urllib.parse import urlparse
     from collections import defaultdict
-    
-    def get_authority_score(url: str) -> int:
-        score = 0
-        url_lower = url.lower()
-        if "docs." in url_lower or "/docs/" in url_lower:
-            score += 50
-        if "reference." in url_lower or "/reference/" in url_lower:
-            score += 40
-        if "github.com" in url_lower or "stackoverflow.com" in url_lower:
-            score += 30
-        if "tutorial" in url_lower or "guide" in url_lower:
-            score += 20
-        if ".edu" in url_lower or ".gov" in url_lower:
-            score += 60
-        return score
+    from agent.utils.source_authority import get_authority
         
-    sorted_urls = sorted(urls, key=get_authority_score, reverse=True)
+    sorted_urls = sorted(urls, key=lambda u: -get_authority(u))
     
     domain_counts = defaultdict(int)
     deduped = []
