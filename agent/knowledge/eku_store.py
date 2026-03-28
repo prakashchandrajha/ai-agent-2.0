@@ -179,17 +179,78 @@ class EKUStore:
             "domains": list(set(m["domain"] for m in self._index.values())),
         }
 
-    def rollback_eku(self, eku_id: str) -> None:
-        """Evolutionary rollback: delete an EKU and all its dependents recursively."""
-        eku = self.load_eku(eku_id)
-        if not eku:
-            return
+    def rollback_eku(self, eku_id: str, dry_run: bool = False) -> list[str]:
+        """Evolutionary rollback: delete an EKU and all its downstream dependents.
+        
+        Cascades DOWNSTREAM: if B depends on A, rolling back A also rolls back B.
+        Returns a list of dependent IDs that were (or would be) affected.
+        """
+        if eku_id not in self._index:
+            return []
             
-        # 1. Rollback all parent EKUs (dependents)
-        for parent_id in eku.parent_ekus:
-            self.rollback_eku(parent_id)
+        # 1. Find all affected IDs recursively
+        affected_ids = self._find_all_downstream(eku_id)
+        
+        # 2. Prepare result (dependents only)
+        dependents_only = sorted(list(set(affected_ids) - {eku_id}))
+        
+        if dry_run:
+            return dependents_only
             
-        # 2. Delete the EKU itself
+        # 3. Perform actual deletion for everyone in affected_ids
+        with file_lock(str(self._index_path)):
+            self._index = self._load_index_no_lock()
+            
+            for rid in affected_ids:
+                # Delete files
+                file_path = self._store_path / f"{rid}.json"
+                quarantine_path = self._quarantine_path / f"{rid}.json"
+                
+                if file_path.exists():
+                    file_path.unlink()
+                if quarantine_path.exists():
+                    quarantine_path.unlink()
+                
+                # Remove from index memory
+                if rid in self._index:
+                    del self._index[rid]
+                
+                logger.warning(f"⏪ Rolled back EKU {rid}")
+            
+            # Save index once
+            self._save_index_no_lock()
+            
+        return dependents_only
+
+    def _find_all_downstream(self, eku_id: str) -> list[str]:
+        """Find all EKUs that recursively depend on the given ID."""
+        # 1. Build the full dependency map from disk
+        all_ids = list(self._index.keys())
+        dependents_map: dict[str, list[str]] = {eid: [] for eid in all_ids}
+        
+        for eid in all_ids:
+            eku = self.load_eku(eid)
+            if eku:
+                # eku depends on its 'dependencies'
+                for foundation_id in eku.dependencies:
+                    if foundation_id in dependents_map:
+                        dependents_map[foundation_id].append(eid)
+        
+        # 2. Recursive collection
+        affected = set()
+        
+        def collect(current_id: str):
+            if current_id in affected:
+                return
+            affected.add(current_id)
+            for dep_id in dependents_map.get(current_id, []):
+                collect(dep_id)
+                
+        collect(eku_id)
+        return list(affected)
+
+    def _delete_single_eku(self, eku_id: str) -> None:
+        """Internal helper to delete one EKU from all store locations."""
         file_path = self._store_path / f"{eku_id}.json"
         quarantine_path = self._quarantine_path / f"{eku_id}.json"
         
@@ -201,12 +262,12 @@ class EKUStore:
                 quarantine_path.unlink()
             
         with file_lock(str(self._index_path)):
-            self._index = self._load_index_no_lock()  # Reload
+            self._index = self._load_index_no_lock()
             if eku_id in self._index:
                 del self._index[eku_id]
                 self._save_index_no_lock()
             
-        logger.warning(f"⏪ Rolled back EKU {eku_id} ({eku.concept})")
+        logger.warning(f"⏪ Rolled back EKU {eku_id}")
 
     # ── Index management ─────────────────────────────────────────
 
@@ -229,7 +290,13 @@ class EKUStore:
 
     def _save_index_no_lock(self) -> None:
         """Internal save without locking (caller must lock)."""
-        atomic_json_write(self._index_path, self._index)
+        # Raw atomic write without lock (caller holds it)
+        import tempfile
+        dir_path = self._index_path.parent
+        with tempfile.NamedTemporaryFile("w", dir=dir_path, delete=False) as tf:
+            json.dump(self._index, tf, indent=2)
+            temp_name = tf.name
+        os.replace(temp_name, self._index_path)
 
 
 # ── Singleton ────────────────────────────────────────────────────
