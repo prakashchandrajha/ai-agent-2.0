@@ -82,11 +82,19 @@ class EKUStore:
         return len(eku.edge_cases) >= 1 or len(eku.constraints) >= 1
 
     async def _gate_no_contradictions(self, eku: ExecutableKnowledgeUnit) -> bool:
-        """New EKU must not contradict existing knowledge."""
+        """New EKU must not contradict existing knowledge.
+        
+        Compare confidence of new EKU against existing EKU for same topic.
+        """
         existing = self.find_by_topic(eku.domain, eku.topic)
         if not existing:
             return True
-        # For now, allow updates (versioning)
+            
+        # Reject if any existing EKU for same topic has higher confidence
+        for other in existing:
+            if other.confidence > eku.confidence:
+                return False
+                
         return True
 
     def _gate_not_overfitted(self, eku: ExecutableKnowledgeUnit) -> bool:
