@@ -139,3 +139,25 @@ def get_chunker() -> Chunker:
     if _chunker is None:
         _chunker = Chunker()
     return _chunker
+
+def smart_chunk(content: str, url: str) -> list[str]:
+    """
+    Chunk content based on source URL type.
+    - API/reference URLs: small chunks (max 200 tokens)
+    - Tutorial URLs: large chunks (max 600 tokens)
+    - Default: overlapping chunks (max 400 tokens, overlap 100)
+    """
+    url_lower = url.lower()
+    
+    if "docs." in url_lower or "/library/" in url_lower or "/reference/" in url_lower or "/api/" in url_lower:
+        chunk_size = 200
+        chunk_overlap = 0
+    elif "tutorial" in url_lower or "guide" in url_lower or "learn" in url_lower:
+        chunk_size = 600
+        chunk_overlap = 0
+    else:
+        chunk_size = 400
+        chunk_overlap = 100
+        
+    chunker = Chunker(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    return chunker.chunk_text(content)

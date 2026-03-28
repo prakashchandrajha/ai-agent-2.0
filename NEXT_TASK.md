@@ -1,40 +1,10 @@
-# NEXT_TASK.md
-# CURRENT TASK — UPDATE THIS AFTER EVERY COMPLETED TASK
-# This is the ONLY thing the agent is allowed to work on right now.
-
----
-
-## CURRENT TASK
-
 Phase: 0
-Task ID: 0.10
-Task Name: Grounded Extraction Bridge
-From MASTER_PLAN.md: Phase 0, TASK 0.10
-
----
-
-## EXACT ACTION
-
-Create `agent/modules/grounded_bridge.py` with `GroundedExtractionBridge` class. Methods: `bridge_extraction(raw_results, context_fingerprint)` converts raw LLM results into `ExecutableKnowledgeUnit` objects. It must attach the `context_fingerprint` to each EKU and set initial `verification_status="candidate"`.
-
----
-
-## FILES TO TOUCH
-
-- agent/modules/grounded_bridge.py only (create new file)
-
----
-
-## DONE WHEN
-
-- [ ] `bridge_extraction(['result1', 'result2'], fingerprint)` returns 2 EKU objects
-- [ ] Each EKU has the correct fingerprint attached
-- [ ] Each EKU status is `"candidate"`
-- [ ] PROGRESS.md updated
-
----
-
-## HOW TO UPDATE THIS FILE WHEN TASK IS COMPLETE
-
-Replace the contents with the next task from MASTER_PLAN.md.
-Next task after this one: Phase 0, TASK 0.11 (Recursive Topic Explorer)
+Task ID: 0.NEW-M
+Task Name: Smart Chunking by Content Type
+From MASTER_PLAN.md: Phase 0, TASK 0.NEW-M
+Exact Action: Add smart_chunk() function to agent/services/chunker.py. Detects content type from source URL and applies different chunking strategy: API/reference URLs get small chunks (max 200 tokens), tutorial URLs get large chunks (max 600 tokens), default gets overlapping chunks (max 400 tokens, overlap 100).
+Files to touch: agent/services/chunker.py only
+Done when:
+- smart_chunk(content, 'https://docs.python.org/3/library/functions.html') uses small chunks
+- smart_chunk(content, 'https://realpython.com/python-tutorial/') uses large chunks
+- smart_chunk(content, 'https://random-blog.com') uses default chunks
