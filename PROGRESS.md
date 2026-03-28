@@ -6,13 +6,14 @@
 
 ## ONE-LINE STATUS
 
-Phase 0, Task 0.6, NOT STARTED
+Phase 0, Task 0.7, NOT STARTED
 
 ---
 
 ## WHAT IS COMPLETE AND VERIFIED
 
 Phase 0 (Foundation Stabilization) — IN PROGRESS
+- Task 0.6: Created Session Logger (non-buffered JSON) — DONE and VERIFIED.
 - Task 0.NEW-E: Implemented LLM Response Cache — DONE and VERIFIED.
 - Task 0.NEW-D: Fixed Circular Imports and side-effects in __main__.py — DONE and VERIFIED.
 - Task 0.5: Fixed JSON Extraction and Think Tags (handles nested tags and returns None on failure) — DONE and VERIFIED.
@@ -38,9 +39,10 @@ Nothing yet.
 
 ## EXACT NEXT ACTION
 
-Update ExecutableKnowledgeUnit in agent/knowledge/eku_schema.py to make semantic dimensions (how, why, when, what) mandatory.
-Update maybe_store in agent/knowledge/eku_store.py to enforce these dimensions.
-Verify that EKUs without all 4 dimensions are rejected.
+Create agent/knowledge/semantic_correction.py with SemanticCorrector class.
+Methods: correct_typo(term, known_terms) returns best match or original.
+Implement fuzzy string matching (Levenshtein distance) using stdlib or minimal dependency.
+Verify that 'pythn' corrects to 'python' when in the domain.
 
 ---
 
@@ -80,7 +82,7 @@ No tests run yet.
 |-------|--------|---------------|
 | -2 | COMPLETE ✅ | 4/4 criteria |
 | -1 | COMPLETE ✅ | 1/1 criteria |
-| 0  | IN PROGRESS | 13/37 tests |
+| 0  | IN PROGRESS | 14/37 tests |
 | 1  | NOT STARTED | 0/10 tests |
 | 2+ | NOT STARTED | — |
 
@@ -88,6 +90,6 @@ No tests run yet.
 
 ## AGENT HANDOFF NOTES
 
-Next agent: start with Phase 0 Task 0.6.
+Next agent: start with Phase 0 Task 0.7.
 Read GUARDRAILS.md before touching anything.
-Mandatory Semantic Dimensions.
+Semantic Correction Engine.
