@@ -6,13 +6,15 @@
 
 ## ONE-LINE STATUS
 
-Phase 0, Task 0.5, NOT STARTED
+Phase 0, Task 0.6, NOT STARTED
 
 ---
 
 ## WHAT IS COMPLETE AND VERIFIED
 
 Phase 0 (Foundation Stabilization) — IN PROGRESS
+- Task 0.5: Fixed JSON Extraction and Think Tags (handles nested tags and returns None on failure) — DONE and VERIFIED.
+- Task 0.4: Created Pre-Execution Code Validator (regex-based static analysis) — DONE and VERIFIED.
 - Task 0.4: Created Pre-Execution Code Validator (regex-based static analysis) — DONE and VERIFIED.
 - Task 0.3: Fixed Contradiction Gate (confidence-based) — DONE and VERIFIED.
 - Task 0.2: Fixed Rollback Direction (cascades downstream with dry_run) — DONE and VERIFIED.
@@ -31,15 +33,15 @@ Phase -2 (Foundation Audit) — all 3 tasks done and verified.
 
 ## WHAT IS IN PROGRESS
 
-Nothing yet.
+- Task 0.6: Updating EKU schema and storage to enforce mandatory semantic dimensions.
 
 ---
 
 ## EXACT NEXT ACTION
 
-Update agent/llm/helpers.py to correctly extract JSON from LLM responses.
-Must handle <think> tags and markdown code fences.
-Ensure JSON extraction works even if not at the start of the string.
+Update ExecutableKnowledgeUnit in agent/knowledge/eku_schema.py to make semantic dimensions (how, why, when, what) mandatory.
+Update maybe_store in agent/knowledge/eku_store.py to enforce these dimensions.
+Verify that EKUs without all 4 dimensions are rejected.
 
 ---
 
@@ -79,7 +81,7 @@ No tests run yet.
 |-------|--------|---------------|
 | -2 | COMPLETE ✅ | 4/4 criteria |
 | -1 | COMPLETE ✅ | 1/1 criteria |
-| 0  | IN PROGRESS | 9/37 tests |
+| 0  | IN PROGRESS | 10/37 tests |
 | 1  | NOT STARTED | 0/10 tests |
 | 2+ | NOT STARTED | — |
 
@@ -87,6 +89,6 @@ No tests run yet.
 
 ## AGENT HANDOFF NOTES
 
-Next agent: start with Phase 0 Task 0.5.
+Next agent: start with Phase 0 Task 0.6.
 Read GUARDRAILS.md before touching anything.
-Fix JSON Extraction + Think Tags.
+Mandatory Semantic Dimensions.
