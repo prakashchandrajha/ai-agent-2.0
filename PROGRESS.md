@@ -13,6 +13,7 @@ Phase 0, Task 0.6, NOT STARTED
 ## WHAT IS COMPLETE AND VERIFIED
 
 Phase 0 (Foundation Stabilization) — IN PROGRESS
+- Task 0.NEW-D: Fixed Circular Imports and side-effects in __main__.py — DONE and VERIFIED.
 - Task 0.5: Fixed JSON Extraction and Think Tags (handles nested tags and returns None on failure) — DONE and VERIFIED.
 - Task 0.4: Created Pre-Execution Code Validator (regex-based static analysis) — DONE and VERIFIED.
 - Task 0.4: Created Pre-Execution Code Validator (regex-based static analysis) — DONE and VERIFIED.
@@ -31,10 +32,7 @@ Phase -2 (Foundation Audit) — all 3 tasks done and verified.
 
 ---
 
-## WHAT IS IN PROGRESS
-
-- Task 0.6: Updating EKU schema and storage to enforce mandatory semantic dimensions.
-
+Nothing yet.
 ---
 
 ## EXACT NEXT ACTION
@@ -81,7 +79,7 @@ No tests run yet.
 |-------|--------|---------------|
 | -2 | COMPLETE ✅ | 4/4 criteria |
 | -1 | COMPLETE ✅ | 1/1 criteria |
-| 0  | IN PROGRESS | 10/37 tests |
+| 0  | IN PROGRESS | 11/37 tests |
 | 1  | NOT STARTED | 0/10 tests |
 | 2+ | NOT STARTED | — |
 

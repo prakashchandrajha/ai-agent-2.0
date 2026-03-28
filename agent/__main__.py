@@ -1,5 +1,4 @@
-"""Allow running as `python -m agent`."""
-
 from agent.cli import main
 
-main()
+if __name__ == "__main__":
+    main()
