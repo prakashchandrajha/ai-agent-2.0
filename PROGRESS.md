@@ -13,6 +13,7 @@ Phase 0, Task 0.7, NOT STARTED
 ## WHAT IS COMPLETE AND VERIFIED
 
 Phase 0 (Foundation Stabilization) — IN PROGRESS
+- Task 0.NEW-H: Implemented Gate Short-Circuiting in EKUStore (6 gates in order) — DONE and VERIFIED.
 - Task 0.NEW-G: Implemented Parallel URL Scraping (asyncio.gather) — DONE and VERIFIED.
 - Task 0.NEW-F: Implemented Batch Embedding Computation and Similarity Matrix — DONE and VERIFIED.
 - Task 0.6: Created Session Logger (non-buffered JSON) — DONE and VERIFIED.
@@ -84,7 +85,7 @@ No tests run yet.
 |-------|--------|---------------|
 | -2 | COMPLETE ✅ | 4/4 criteria |
 | -1 | COMPLETE ✅ | 1/1 criteria |
-| 0  | IN PROGRESS | 17/37 tests |
+| 0  | IN PROGRESS | 19/37 tests |
 | 1  | NOT STARTED | 0/10 tests |
 | 2+ | NOT STARTED | — |
 

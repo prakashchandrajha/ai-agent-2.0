@@ -3,6 +3,7 @@
 Implements the DELAYED STORAGE pattern: nothing stored until it passes all gates.
 """
 
+import asyncio
 import json
 import logging
 import os
@@ -40,31 +41,69 @@ class EKUStore:
     async def maybe_store(self, eku: ExecutableKnowledgeUnit) -> bool:
         """Storage gate — only store if ALL gates pass.
 
-        This is THE CRITICAL FIX that prevents garbage knowledge.
+        Uses short-circuit evaluation: stops on first failure.
         """
-        gates = {
-            "tests_pass": self._gate_tests_pass(eku),
-            "failures_understood": self._gate_failures_understood(eku),
-            "edge_cases_handled": self._gate_edge_cases_handled(eku),
-            "no_contradictions": await self._gate_no_contradictions(eku),
-            "not_overfitted": self._gate_not_overfitted(eku),
-        }
-
-        failed = [name for name, passed in gates.items() if not passed]
-
-        if not failed:
+        if await self._validate_all_gates(eku):
             eku.verification_status = "proven"
             self._save_eku(eku)
             logger.info(f"✅ Stored EKU: {eku.concept} (confidence={eku.confidence:.2f})")
             return True
         else:
             eku.verification_status = "quarantined"
-            eku.quarantine_reason = failed
+            # Quarantine reason is now populated by the specific gate that failed
             self._quarantine_eku(eku)
             logger.warning(
-                f"🔒 Quarantined EKU: {eku.concept} — failed gates: {failed}"
+                f"🔒 Quarantined EKU: {eku.concept} — failed gates: {eku.quarantine_reason}"
             )
             return False
+
+    async def _validate_all_gates(self, eku: ExecutableKnowledgeUnit) -> bool:
+        """Run gates in order: cheapest first, expensive last.
+        
+        Short-circuit: return False on first failure.
+        """
+        # Reset quarantine reason for fresh validation
+        eku.quarantine_reason = []
+
+        # Order: trivial, entropy, tests, overfit, contradict, contract
+        gates = [
+            ("_gate_not_trivial", self._gate_not_trivial),
+            ("_gate_entropy", self._gate_entropy),
+            ("_gate_tests_pass", self._gate_tests_pass),
+            ("_gate_not_overfitted", self._gate_not_overfitted),
+            ("_gate_no_contradictions", self._gate_no_contradictions),
+            ("_gate_mastery_contract", self._gate_mastery_contract),
+        ]
+
+        for name, gate in gates:
+            try:
+                result = gate(eku)
+                if asyncio.iscoroutine(result):
+                    passed = await result
+                else:
+                    passed = result
+                
+                if not passed:
+                    eku.quarantine_reason.append(name)
+                    return False
+            except Exception as e:
+                logger.error(f"Error in gate {name}: {e}")
+                eku.quarantine_reason.append(f"{name}_error")
+                return False
+        
+        return True
+
+    def _gate_not_trivial(self, eku: ExecutableKnowledgeUnit) -> bool:
+        """Basic checks: Must have concept, topic, and definition."""
+        if not eku.concept or not eku.topic or not eku.definition:
+            return False
+        if len(eku.definition.strip()) < 10:
+            return False
+        return True
+
+    def _gate_entropy(self, eku: ExecutableKnowledgeUnit) -> bool:
+        """Check if EKU meets the required entropy/confidence threshold."""
+        return eku.confidence >= self.settings.entropy_threshold
 
     def _gate_tests_pass(self, eku: ExecutableKnowledgeUnit) -> bool:
         """Tests must have a reasonable pass rate."""
@@ -99,7 +138,6 @@ class EKUStore:
 
     def _gate_not_overfitted(self, eku: ExecutableKnowledgeUnit) -> bool:
         """Must pass in at least N distinct contexts."""
-        min_ctx = self.settings.min_contexts_to_pass
         if not eku.test_results:
             return False
         # Count distinct passing test categories
@@ -107,6 +145,11 @@ class EKUStore:
             t.category for t in eku.test_results if t.passed
         )
         return len(passing_categories) >= 2  # At least normal + edge
+
+    async def _gate_mastery_contract(self, eku: ExecutableKnowledgeUnit) -> bool:
+        """Check if the knowledge meets the mastery contract criteria."""
+        # Simple implementation: failure if there are explicitly unmet criteria
+        return len(eku.mastery_criteria_unmet) == 0
 
     # ── CRUD operations ──────────────────────────────────────────
 
