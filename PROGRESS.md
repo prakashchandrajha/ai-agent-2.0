@@ -6,13 +6,14 @@
 
 ## ONE-LINE STATUS
 
-Phase 0, Task 0.4, NOT STARTED
+Phase 0, Task 0.5, NOT STARTED
 
 ---
 
 ## WHAT IS COMPLETE AND VERIFIED
 
 Phase 0 (Foundation Stabilization) — IN PROGRESS
+- Task 0.4: Created Pre-Execution Code Validator (regex-based static analysis) — DONE and VERIFIED.
 - Task 0.3: Fixed Contradiction Gate (confidence-based) — DONE and VERIFIED.
 - Task 0.2: Fixed Rollback Direction (cascades downstream with dry_run) — DONE and VERIFIED.
 - Task 0.1: Fixed Sandbox Environment Isolation (whitelist-only env) — DONE and VERIFIED.
@@ -36,9 +37,9 @@ Nothing yet.
 
 ## EXACT NEXT ACTION
 
-Implement the Semantic Correction Engine in agent/knowledge/semantic_correction.py.
-Must handle typo correction via fuzzy matching for concept lookups.
-Verify that 'list.apend' correctly maps to 'list.append' in the knowledge store.
+Update agent/llm/helpers.py to correctly extract JSON from LLM responses.
+Must handle <think> tags and markdown code fences.
+Ensure JSON extraction works even if not at the start of the string.
 
 ---
 
@@ -78,7 +79,7 @@ No tests run yet.
 |-------|--------|---------------|
 | -2 | COMPLETE ✅ | 4/4 criteria |
 | -1 | COMPLETE ✅ | 1/1 criteria |
-| 0  | IN PROGRESS | 8/37 tests |
+| 0  | IN PROGRESS | 9/37 tests |
 | 1  | NOT STARTED | 0/10 tests |
 | 2+ | NOT STARTED | — |
 
@@ -86,6 +87,6 @@ No tests run yet.
 
 ## AGENT HANDOFF NOTES
 
-Next agent: start with Phase 0 Task 0.4.
+Next agent: start with Phase 0 Task 0.5.
 Read GUARDRAILS.md before touching anything.
-Implement Semantic Correction Engine.
+Fix JSON Extraction + Think Tags.
