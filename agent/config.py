@@ -27,6 +27,21 @@ def feature_enabled(name: str) -> bool:
     return FEATURE_FLAGS.get(name, False)
 
 
+DEDUP_THRESHOLDS = {
+    "invariant": 0.95,
+    "definition": 0.90,
+    "edge_case": 0.85,
+    "example": 0.80,
+    "constraint": 0.92,
+    "_default": 0.90,
+}
+
+
+def get_dedup_threshold(knowledge_type: str) -> float:
+    """Get the similarity threshold for deduplication based on knowledge type."""
+    return DEDUP_THRESHOLDS.get(knowledge_type.lower(), DEDUP_THRESHOLDS["_default"])
+
+
 def enable_feature(name: str) -> None:
     """Enable a feature."""
     if name not in FEATURE_FLAGS:

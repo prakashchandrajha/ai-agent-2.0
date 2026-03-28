@@ -6,13 +6,14 @@
 
 ## ONE-LINE STATUS
 
-Phase 0, Task 0.8, NOT STARTED
+Phase 0, Task 0.9, NOT STARTED
 
 ---
 
 ## WHAT IS COMPLETE AND VERIFIED
 
 Phase 0 (Foundation Stabilization) — IN PROGRESS
+- Task 0.8: Implemented Per-Type Dedup Thresholds (invariant, definition, etc.) — DONE and VERIFIED.
 - Task 0.7: Fixed .env Values (iterations=3, entropy=0.85, CI=false) — DONE and VERIFIED.
 - Task 0.NEW-L: Implemented Transitive Confidence Calculator (Product of chain) — DONE and VERIFIED.
 - Task 0.NEW-K: Implemented Composition Hazard Registry (5 Python, 2 JS hazards) — DONE and VERIFIED.
@@ -47,9 +48,10 @@ Nothing yet.
 
 ## EXACT NEXT ACTION
 
-Add DEDUP_THRESHOLDS dict and get_dedup_threshold(knowledge_type) to agent/config.py.
-Include thresholds: invariant=0.95, definition=0.90, edge_case=0.85, example=0.80, constraint=0.92, _default=0.90.
-Verify that it returns correct threshold for each type.
+Create agent/services/vector_store.py with VectorStore class.
+Implement add_eku(eku) and query_similar(query, n_results) as stubs.
+query_similar should return an empty list for now (until ChromaDB is wired).
+Verify that it doesn't crash any existing code.
 
 ---
 
@@ -89,7 +91,7 @@ No tests run yet.
 |-------|--------|---------------|
 | -2 | COMPLETE ✅ | 4/4 criteria |
 | -1 | COMPLETE ✅ | 1/1 criteria |
-| 0  | IN PROGRESS | 24/37 tests |
+| 0  | IN PROGRESS | 25/37 tests |
 | 1  | NOT STARTED | 0/10 tests |
 | 2+ | NOT STARTED | — |
 
@@ -97,6 +99,6 @@ No tests run yet.
 
 ## AGENT HANDOFF NOTES
 
-Next agent: start with Phase 0 Task 0.8.
+Next agent: start with Phase 0 Task 0.9.
 Read GUARDRAILS.md before touching anything.
-Per-Type Dedup Thresholds.
+VectorStore Stub.
