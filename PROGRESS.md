@@ -1,17 +1,19 @@
 # PROGRESS.md
 # READ THIS FIRST. UPDATE THIS LAST. EVERY SESSION.
-# Last Updated: [agent updates this]
+# Last Updated: 2026-03-28 (15:16:00)
 
 ---
 
 ## ONE-LINE STATUS
 
-Phase 0, Task 0.0, NOT STARTED
+Phase 0, Task 0.NEW-A, NOT STARTED
 
 ---
 
 ## WHAT IS COMPLETE AND VERIFIED
 
+Phase 0 (Foundation Stabilization) — IN PROGRESS
+- Task 0.0: Extended EKU schema with 15 new fields and 3 new dataclasses — DONE and VERIFIED.
 Phase -1 (Pre-Flight) — all 8 checks passed and verified ALL GREEN.
 Phase -2 (Foundation Audit) — all 3 tasks done and verified.
 - Task -2.1: Module isolation tests complete (found working with correct internal APIs).
@@ -28,9 +30,9 @@ Nothing yet.
 
 ## EXACT NEXT ACTION
 
-Extend EKU Schema in agent/knowledge/eku_schema.py.
-Add 15 new fields and 3 new dataclasses.
-Verify roundtrip with to_dict() and from_dict().
+Create migrations.py in agent/knowledge/migrations.py to handle EKU schema upgrades.
+Wire migrate_eku() into from_dict() in eku_schema.py.
+Verify with migration test case.
 
 ---
 
@@ -70,7 +72,7 @@ No tests run yet.
 |-------|--------|---------------|
 | -2 | COMPLETE ✅ | 4/4 criteria |
 | -1 | COMPLETE ✅ | 1/1 criteria |
-| 0  | IN PROGRESS | 0/37 tests |
+| 0  | IN PROGRESS | 1/37 tests |
 | 1  | NOT STARTED | 0/10 tests |
 | 2+ | NOT STARTED | — |
 
@@ -78,6 +80,6 @@ No tests run yet.
 
 ## AGENT HANDOFF NOTES
 
-Next agent: start with Phase 0 Task 0.0.
+Next agent: start with Phase 0 Task 0.NEW-A.
 Read GUARDRAILS.md before touching anything.
-Extend EKU Schema in agent/knowledge/eku_schema.py.
+Create agent/knowledge/migrations.py and wire it into eku_schema.py.

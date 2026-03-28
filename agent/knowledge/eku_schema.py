@@ -74,6 +74,35 @@ class TestResult:
 
 
 @dataclass
+class ExecutionTrace:
+    code: str
+    actual_output: str
+    elapsed_ms: float
+    test_category: str       # "normal", "edge", "extreme"
+    passed: bool
+    robustness_score: float
+
+
+@dataclass
+class Constraint:
+    rule: str
+    is_hard: bool            # True=hard, False=soft
+    source: str              # "failure_inversion", "test_implication", "documentation"
+    confidence: float
+    violation_count: int = 0
+
+
+@dataclass
+class GateDiagnostic:
+    gate_name: str
+    failure_reason: str
+    actual_value: float
+    required_value: float
+    suggested_fix: str
+    is_retryable: bool
+
+
+@dataclass
 class ExecutableKnowledgeUnit:
     """THE fundamental unit of agent memory.
 
@@ -117,7 +146,45 @@ class ExecutableKnowledgeUnit:
     parent_ekus: list[str] = field(default_factory=list)   # EKU IDs that depend on this
     prerequisites: list[str] = field(default_factory=list)  # Topic names needed first
 
-    # 7. CROSS-LANGUAGE generalization
+    # 7. CONFIDENCE & CONSTRAINTS
+    confidence_breakdown: dict = field(default_factory=dict)
+    hard_constraints: list[str] = field(default_factory=list)
+    soft_constraints: list[str] = field(default_factory=list)
+    violated_constraints_log: list[str] = field(default_factory=list)
+
+    # 8. EXECUTION TRACES
+    canonical_traces: list[ExecutionTrace] = field(default_factory=list)
+    trace_patterns: list[str] = field(default_factory=list)
+
+    # 9. PREDICTION TRACKING
+    prediction_accuracy: float = 0.0
+    prediction_history: list[dict] = field(default_factory=list)
+    confusion_gaps: list[str] = field(default_factory=list)
+
+    # 10. TRANSFER & LIFECYCLE
+    micro_skills: list[str] = field(default_factory=list)
+    last_used_timestamp: str = ""
+    usage_count: int = 0
+    decay_score: float = 0.0
+
+    # 11. SAFETY & QUALITY
+    state_sensitive: bool = False
+    context_dependencies: list[str] = field(default_factory=list)
+    avg_robustness_score: float = 1.0
+    fragility_flags: list[str] = field(default_factory=list)
+
+    # 12. SOURCE & MASTERY
+    source_urls: list[str] = field(default_factory=list)
+    avg_source_authority: float = 0.0
+    mastery_criteria_met: list[str] = field(default_factory=list)
+    mastery_criteria_unmet: list[str] = field(default_factory=list)
+    gate_diagnostics: list[GateDiagnostic] = field(default_factory=list)
+
+    # 13. VERSIONING & FINGERPRINT
+    version_bounds: dict = field(default_factory=dict)
+    context_fingerprint: dict = field(default_factory=dict)
+
+    # 14. CROSS-LANGUAGE generalization
     language_mappings: dict[str, CodeTemplate] = field(default_factory=dict)
 
     # ── Computed properties ──────────────────────────────────────
@@ -238,6 +305,44 @@ class ExecutableKnowledgeUnit:
             "dependencies": self.dependencies,
             "parent_ekus": self.parent_ekus,
             "prerequisites": self.prerequisites,
+            "confidence_breakdown": self.confidence_breakdown,
+            "hard_constraints": self.hard_constraints,
+            "soft_constraints": self.soft_constraints,
+            "violated_constraints_log": self.violated_constraints_log,
+            "canonical_traces": [
+                {
+                    "code": t.code, "actual_output": t.actual_output,
+                    "elapsed_ms": t.elapsed_ms, "test_category": t.test_category,
+                    "passed": t.passed, "robustness_score": t.robustness_score
+                }
+                for t in self.canonical_traces
+            ],
+            "trace_patterns": self.trace_patterns,
+            "prediction_accuracy": self.prediction_accuracy,
+            "prediction_history": self.prediction_history,
+            "confusion_gaps": self.confusion_gaps,
+            "micro_skills": self.micro_skills,
+            "last_used_timestamp": self.last_used_timestamp,
+            "usage_count": self.usage_count,
+            "decay_score": self.decay_score,
+            "state_sensitive": self.state_sensitive,
+            "context_dependencies": self.context_dependencies,
+            "avg_robustness_score": self.avg_robustness_score,
+            "fragility_flags": self.fragility_flags,
+            "source_urls": self.source_urls,
+            "avg_source_authority": self.avg_source_authority,
+            "mastery_criteria_met": self.mastery_criteria_met,
+            "mastery_criteria_unmet": self.mastery_criteria_unmet,
+            "gate_diagnostics": [
+                {
+                    "gate_name": t.gate_name, "failure_reason": t.failure_reason,
+                    "actual_value": t.actual_value, "required_value": t.required_value,
+                    "suggested_fix": t.suggested_fix, "is_retryable": t.is_retryable
+                }
+                for t in self.gate_diagnostics
+            ],
+            "version_bounds": self.version_bounds,
+            "context_fingerprint": self.context_fingerprint,
         }
 
     @classmethod
@@ -258,6 +363,28 @@ class ExecutableKnowledgeUnit:
             dependencies=data.get("dependencies", []),
             parent_ekus=data.get("parent_ekus", []),
             prerequisites=data.get("prerequisites", []),
+            confidence_breakdown=data.get("confidence_breakdown", {}),
+            hard_constraints=data.get("hard_constraints", []),
+            soft_constraints=data.get("soft_constraints", []),
+            violated_constraints_log=data.get("violated_constraints_log", []),
+            trace_patterns=data.get("trace_patterns", []),
+            prediction_accuracy=data.get("prediction_accuracy", 0.0),
+            prediction_history=data.get("prediction_history", []),
+            confusion_gaps=data.get("confusion_gaps", []),
+            micro_skills=data.get("micro_skills", []),
+            last_used_timestamp=data.get("last_used_timestamp", ""),
+            usage_count=data.get("usage_count", 0),
+            decay_score=data.get("decay_score", 0.0),
+            state_sensitive=data.get("state_sensitive", False),
+            context_dependencies=data.get("context_dependencies", []),
+            avg_robustness_score=data.get("avg_robustness_score", 1.0),
+            fragility_flags=data.get("fragility_flags", []),
+            source_urls=data.get("source_urls", []),
+            avg_source_authority=data.get("avg_source_authority", 0.0),
+            mastery_criteria_met=data.get("mastery_criteria_met", []),
+            mastery_criteria_unmet=data.get("mastery_criteria_unmet", []),
+            version_bounds=data.get("version_bounds", {}),
+            context_fingerprint=data.get("context_fingerprint", {}),
         )
 
         for t in data.get("transformations", []):
@@ -276,5 +403,11 @@ class ExecutableKnowledgeUnit:
             eku.last_tested = datetime.fromisoformat(data["last_tested"])
         if "created_at" in data:
             eku.created_at = datetime.fromisoformat(data["created_at"])
+
+        for t in data.get("canonical_traces", []):
+            eku.canonical_traces.append(ExecutionTrace(**t))
+
+        for t in data.get("gate_diagnostics", []):
+            eku.gate_diagnostics.append(GateDiagnostic(**t))
 
         return eku
