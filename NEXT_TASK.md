@@ -7,29 +7,29 @@
 ## CURRENT TASK
 
 Phase: 0
-Task ID: 0.NEW-K
-Task Name: Composition Hazard Registry
-From MASTER_PLAN.md: Phase 0, TASK 0.NEW-K
+Task ID: 0.NEW-L
+Task Name: Transitive Confidence Calculator
+From MASTER_PLAN.md: Phase 0, TASK 0.NEW-L
 
 ---
 
 ## EXACT ACTION
 
-Create `agent/knowledge/hazard_registry.py` with `CompositionHazard` dataclass (fields: `concepts`, `hazard`, `mitigation`, `severity`). Implement `check_composition_hazards(required_concepts)` function. Populate `ALL_HAZARDS` with at least 3 common hazards (e.g., dict modification during iteration, async callbacks in forEach).
+Add `calculate_effective_confidence(eku_id)` method to `EKUStore` in `agent/knowledge/eku_store.py`. This method must recursively (or iteratively) calculate the real confidence by multiplying the EKU's raw confidence by the confidences of all its dependencies. Returns tuple `(float, str)` where the string is the chain description (e.g., `"A(0.90) * B(0.80) = 0.72"`).
 
 ---
 
 ## FILES TO TOUCH
 
-- agent/knowledge/hazard_registry.py only (create new file)
+- agent/knowledge/eku_store.py
 
 ---
 
 ## DONE WHEN
 
-- [ ] `CompositionHazard` dataclass is defined
-- [ ] `check_composition_hazards(['dict iteration', 'dict modification'])` returns the relevant hazard
-- [ ] `check_composition_hazards(['safe concept'])` returns an empty list
+- [ ] `calculate_effective_confidence` exists in `EKUStore`
+- [ ] Returns `(conf, chain)` where `conf` is correctly multiplied
+- [ ] Returns `(raw_conf, concept)` if no dependencies
 - [ ] PROGRESS.md updated
 
 ---
@@ -37,4 +37,4 @@ Create `agent/knowledge/hazard_registry.py` with `CompositionHazard` dataclass (
 ## HOW TO UPDATE THIS FILE WHEN TASK IS COMPLETE
 
 Replace the contents with the next task from MASTER_PLAN.md.
-Next task after this one: Phase 0, TASK 0.NEW-L (Transitive Confidence Calculator)
+Next task after this one: Phase 0, TASK 0.7 (Semantic Correction Engine)
