@@ -6,13 +6,14 @@
 
 ## ONE-LINE STATUS
 
-Phase 0, Task 0.9, NOT STARTED
+Phase 0, Task 0.10, NOT STARTED
 
 ---
 
 ## WHAT IS COMPLETE AND VERIFIED
 
 Phase 0 (Foundation Stabilization) — IN PROGRESS
+- Task 0.9: Implemented VectorStore Stub (agent/knowledge/vector_store.py) — DONE and VERIFIED.
 - Task 0.8: Implemented Per-Type Dedup Thresholds (invariant, definition, etc.) — DONE and VERIFIED.
 - Task 0.7: Fixed .env Values (iterations=3, entropy=0.85, CI=false) — DONE and VERIFIED.
 - Task 0.NEW-L: Implemented Transitive Confidence Calculator (Product of chain) — DONE and VERIFIED.
@@ -48,10 +49,10 @@ Nothing yet.
 
 ## EXACT NEXT ACTION
 
-Create agent/services/vector_store.py with VectorStore class.
-Implement add_eku(eku) and query_similar(query, n_results) as stubs.
-query_similar should return an empty list for now (until ChromaDB is wired).
-Verify that it doesn't crash any existing code.
+Create agent/modules/grounded_bridge.py with GroundedExtractionBridge class.
+Methods: bridge_extraction(raw_results, context_fingerprint) returns list[EKU].
+Verify that it maps raw LLM extraction into valid EKU objects with fingerprints.
+Done when: bridges 2 raw and 1 failed extraction into correct EKU statuses.
 
 ---
 
@@ -91,7 +92,7 @@ No tests run yet.
 |-------|--------|---------------|
 | -2 | COMPLETE ✅ | 4/4 criteria |
 | -1 | COMPLETE ✅ | 1/1 criteria |
-| 0  | IN PROGRESS | 25/37 tests |
+| 0  | IN PROGRESS | 26/37 tests |
 | 1  | NOT STARTED | 0/10 tests |
 | 2+ | NOT STARTED | — |
 
@@ -99,6 +100,6 @@ No tests run yet.
 
 ## AGENT HANDOFF NOTES
 
-Next agent: start with Phase 0 Task 0.9.
+Next agent: start with Phase 0 Task 0.10.
 Read GUARDRAILS.md before touching anything.
-VectorStore Stub.
+Grounded Extraction Bridge.

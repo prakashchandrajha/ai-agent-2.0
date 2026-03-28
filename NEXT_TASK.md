@@ -7,28 +7,29 @@
 ## CURRENT TASK
 
 Phase: 0
-Task ID: 0.9
-Task Name: VectorStore Stub
-From MASTER_PLAN.md: Phase 0, TASK 0.9
+Task ID: 0.10
+Task Name: Grounded Extraction Bridge
+From MASTER_PLAN.md: Phase 0, TASK 0.10
 
 ---
 
 ## EXACT ACTION
 
-Create `agent/services/vector_store.py` with `VectorStore` class. Methods: `add_eku(eku)`, `query_similar(query, n_results=5)`. For now, `query_similar` always returns `[]` and `add_eku` is a `pass`. This decouples the system from the actual vector database implementation.
+Create `agent/modules/grounded_bridge.py` with `GroundedExtractionBridge` class. Methods: `bridge_extraction(raw_results, context_fingerprint)` converts raw LLM results into `ExecutableKnowledgeUnit` objects. It must attach the `context_fingerprint` to each EKU and set initial `verification_status="candidate"`.
 
 ---
 
 ## FILES TO TOUCH
 
-- agent/services/vector_store.py only (create new file)
+- agent/modules/grounded_bridge.py only (create new file)
 
 ---
 
 ## DONE WHEN
 
-- [ ] `VectorStore` class exists with `add_eku` and `query_similar` methods
-- [ ] `query_similar` returns an empty list
+- [ ] `bridge_extraction(['result1', 'result2'], fingerprint)` returns 2 EKU objects
+- [ ] Each EKU has the correct fingerprint attached
+- [ ] Each EKU status is `"candidate"`
 - [ ] PROGRESS.md updated
 
 ---
@@ -36,4 +37,4 @@ Create `agent/services/vector_store.py` with `VectorStore` class. Methods: `add_
 ## HOW TO UPDATE THIS FILE WHEN TASK IS COMPLETE
 
 Replace the contents with the next task from MASTER_PLAN.md.
-Next task after this one: Phase 0, TASK 0.10 (Grounded Extraction Bridge)
+Next task after this one: Phase 0, TASK 0.11 (Recursive Topic Explorer)
