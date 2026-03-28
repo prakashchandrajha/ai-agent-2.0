@@ -6,13 +6,14 @@
 
 ## ONE-LINE STATUS
 
-Phase 0, Task 0.7, NOT STARTED
+Phase 0, Task 0.8, NOT STARTED
 
 ---
 
 ## WHAT IS COMPLETE AND VERIFIED
 
 Phase 0 (Foundation Stabilization) — IN PROGRESS
+- Task 0.7: Fixed .env Values (iterations=3, entropy=0.85, CI=false) — DONE and VERIFIED.
 - Task 0.NEW-L: Implemented Transitive Confidence Calculator (Product of chain) — DONE and VERIFIED.
 - Task 0.NEW-K: Implemented Composition Hazard Registry (5 Python, 2 JS hazards) — DONE and VERIFIED.
 - Task 0.NEW-J: Implemented Version-Aware Knowledge Scoping (min/max/dep/rem checks) — DONE and VERIFIED.
@@ -46,10 +47,9 @@ Nothing yet.
 
 ## EXACT NEXT ACTION
 
-Create agent/knowledge/semantic_correction.py with SemanticCorrector class.
-Methods: correct_typo(term, known_terms) returns best match or original.
-Implement fuzzy string matching (Levenshtein distance) using stdlib or minimal dependency.
-Verify that 'pythn' corrects to 'python' when in the domain.
+Add DEDUP_THRESHOLDS dict and get_dedup_threshold(knowledge_type) to agent/config.py.
+Include thresholds: invariant=0.95, definition=0.90, edge_case=0.85, example=0.80, constraint=0.92, _default=0.90.
+Verify that it returns correct threshold for each type.
 
 ---
 
@@ -97,6 +97,6 @@ No tests run yet.
 
 ## AGENT HANDOFF NOTES
 
-Next agent: start with Phase 0 Task 0.7.
+Next agent: start with Phase 0 Task 0.8.
 Read GUARDRAILS.md before touching anything.
-Semantic Correction Engine.
+Per-Type Dedup Thresholds.

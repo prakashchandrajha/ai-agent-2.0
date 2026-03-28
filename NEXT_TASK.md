@@ -7,28 +7,31 @@
 ## CURRENT TASK
 
 Phase: 0
-Task ID: 0.7
-Task Name: Semantic Correction Engine
-From MASTER_PLAN.md: Phase 0, TASK 0.7
+Task ID: 0.8
+Task Name: Per-Type Dedup Thresholds
+From MASTER_PLAN.md: Phase 0, TASK 0.8
 
 ---
 
 ## EXACT ACTION
 
-Create `agent/knowledge/semantic_correction.py` with `SemanticCorrector` class. Methods: `correct_typo(term, known_terms)` returns the best match from `known_terms` if similarity is high enough, else original. Implement fuzzy string matching (Levenshtein distance) using stdlib or a minimal dependency.
+Add `DEDUP_THRESHOLDS` dictionary and `get_dedup_threshold(knowledge_type)` function to `agent/config.py`.
+Thresholds: `invariant=0.95`, `definition=0.90`, `edge_case=0.85`, `example=0.80`, `constraint=0.92`, `_default=0.90`.
 
 ---
 
 ## FILES TO TOUCH
 
-- agent/knowledge/semantic_correction.py only (create new file)
+- agent/config.py
 
 ---
 
 ## DONE WHEN
 
-- [ ] `correct_typo('pythn', ['python', 'javascript'])` returns `'python'`
-- [ ] `correct_typo('xyz', ['python', 'javascript'])` returns `'xyz'` (no match)
+- [ ] `DEDUP_THRESHOLDS` and `get_dedup_threshold` are implemented in `agent/config.py`
+- [ ] `get_dedup_threshold('invariant')` returns `0.95`
+- [ ] `get_dedup_threshold('example')` returns `0.80`
+- [ ] `get_dedup_threshold('unknown')` returns `0.90` (default)
 - [ ] PROGRESS.md updated
 
 ---
@@ -36,4 +39,4 @@ Create `agent/knowledge/semantic_correction.py` with `SemanticCorrector` class. 
 ## HOW TO UPDATE THIS FILE WHEN TASK IS COMPLETE
 
 Replace the contents with the next task from MASTER_PLAN.md.
-Next task after this one: Phase 0, TASK 0.8 (Adversarial Prompt Guard)
+Next task after this one: Phase 0, TASK 0.9 (VectorStore Stub)
