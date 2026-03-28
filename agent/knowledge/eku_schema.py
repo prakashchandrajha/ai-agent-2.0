@@ -139,7 +139,7 @@ class ExecutableKnowledgeUnit:
     quarantine_reason: list[str] = field(default_factory=list)
     last_tested: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    version: int = 1
+    _schema_version: str = "2.0.0"
 
     # 6. DEPENDENCIES
     dependencies: list[str] = field(default_factory=list)  # EKU IDs this depends on
@@ -301,7 +301,7 @@ class ExecutableKnowledgeUnit:
             "test_pass_rate": self.test_pass_rate,
             "last_tested": self.last_tested.isoformat(),
             "created_at": self.created_at.isoformat(),
-            "version": self.version,
+            "_schema_version": self._schema_version,
             "dependencies": self.dependencies,
             "parent_ekus": self.parent_ekus,
             "prerequisites": self.prerequisites,
@@ -348,6 +348,9 @@ class ExecutableKnowledgeUnit:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ExecutableKnowledgeUnit:
         """Deserialize from dict."""
+        from agent.knowledge.migrations import migrate_eku
+        data = migrate_eku(data)
+        
         eku = cls(
             id=data.get("id", str(uuid.uuid4())),
             concept=data.get("concept", ""),
@@ -359,7 +362,7 @@ class ExecutableKnowledgeUnit:
             confidence=data.get("confidence", 0.0),
             verification_status=data.get("verification_status", "unverified"),
             quarantine_reason=data.get("quarantine_reason", []),
-            version=data.get("version", 1),
+            _schema_version=data.get("_schema_version", "2.0.0"),
             dependencies=data.get("dependencies", []),
             parent_ekus=data.get("parent_ekus", []),
             prerequisites=data.get("prerequisites", []),

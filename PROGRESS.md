@@ -6,13 +6,14 @@
 
 ## ONE-LINE STATUS
 
-Phase 0, Task 0.NEW-A, NOT STARTED
+Phase 0, Task 0.NEW-B, NOT STARTED
 
 ---
 
 ## WHAT IS COMPLETE AND VERIFIED
 
 Phase 0 (Foundation Stabilization) — IN PROGRESS
+- Task 0.NEW-A: Created migrations.py and wired into eku_schema.py for v1->v2 upgrades — DONE and VERIFIED.
 - Task 0.0: Extended EKU schema with 15 new fields and 3 new dataclasses — DONE and VERIFIED.
 Phase -1 (Pre-Flight) — all 8 checks passed and verified ALL GREEN.
 Phase -2 (Foundation Audit) — all 3 tasks done and verified.
@@ -30,9 +31,9 @@ Nothing yet.
 
 ## EXACT NEXT ACTION
 
-Create migrations.py in agent/knowledge/migrations.py to handle EKU schema upgrades.
-Wire migrate_eku() into from_dict() in eku_schema.py.
-Verify with migration test case.
+Implement robust file locking (fcntl/msvcrt) in agent/knowledge/json_store.py.
+Ensure atomic writes and prevent corruption during concurrent access.
+Verify with stress test (multiple processes writing to same EKU store).
 
 ---
 
@@ -72,7 +73,7 @@ No tests run yet.
 |-------|--------|---------------|
 | -2 | COMPLETE ✅ | 4/4 criteria |
 | -1 | COMPLETE ✅ | 1/1 criteria |
-| 0  | IN PROGRESS | 1/37 tests |
+| 0  | IN PROGRESS | 2/37 tests |
 | 1  | NOT STARTED | 0/10 tests |
 | 2+ | NOT STARTED | — |
 
@@ -80,6 +81,6 @@ No tests run yet.
 
 ## AGENT HANDOFF NOTES
 
-Next agent: start with Phase 0 Task 0.NEW-A.
+Next agent: start with Phase 0 Task 0.NEW-B.
 Read GUARDRAILS.md before touching anything.
-Create agent/knowledge/migrations.py and wire it into eku_schema.py.
+Implement file locking in agent/knowledge/json_store.py.
