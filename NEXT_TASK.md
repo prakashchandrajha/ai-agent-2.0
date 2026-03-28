@@ -1,10 +1,11 @@
 Phase: 0
-Task ID: 0.10
-Task Name: Fix Scraper Failure Tracking
-From MASTER_PLAN.md: Phase 0, TASK 0.10
-Exact Action: Fix collect() in agent/modules/collector.py to abort when scraping failure rate exceeds 50% and zero successes. Must raise ScrapingThresholdError with clear message. Also deduplicate URLs by domain before scraping using dedupe_urls_by_domain().
-Files to touch: agent/modules/collector.py only
+Task ID: 0.NEW-N
+Task Name: Atomic Learning Sessions
+From MASTER_PLAN.md: Phase 0, TASK 0.NEW-N
+Exact Action: Create agent/utils/atomic_session.py with AtomicLearningSession class. If commit() is never called, cleanup removes all temp files automatically. Must work as context manager.
+Files to touch: agent/utils/atomic_session.py only (create new file)
 Done when:
-- If 3 out of 3 URLs fail, ScrapingThresholdError is raised
-- If 1 out of 3 URLs succeed, no error raised
-- dedupe_urls_by_domain() exists and limits to max 2 per domain
+- Session saves to temp location
+- commit() moves to final location atomically
+- If exception occurs before commit, temp files are cleaned up automatically
+- Works as context manager with: with AtomicLearningSession('concept') as session:
