@@ -1,11 +1,10 @@
 Phase: 0
-Task ID: 0.NEW-N
-Task Name: Atomic Learning Sessions
-From MASTER_PLAN.md: Phase 0, TASK 0.NEW-N
-Exact Action: Create agent/utils/atomic_session.py with AtomicLearningSession class. If commit() is never called, cleanup removes all temp files automatically. Must work as context manager.
-Files to touch: agent/utils/atomic_session.py only (create new file)
+Task ID: 0.NEW-O
+Task Name: Source URL Deduplication
+From MASTER_PLAN.md: Phase 0, TASK 0.NEW-O
+Exact Action: Add dedupe_urls_by_domain() function to agent/modules/collector.py. Already exists from Task 0.10 — verify it is exported and works correctly. Max 2 URLs per domain, sorted by authority score first.
+Files to touch: agent/modules/collector.py only
 Done when:
-- Session saves to temp location
-- commit() moves to final location atomically
-- If exception occurs before commit, temp files are cleaned up automatically
-- Works as context manager with: with AtomicLearningSession('concept') as session:
+- 3 URLs from same domain → only 2 returned
+- Official docs domain kept over random blog when both present
+- Function is importable from agent.modules.collector

@@ -29,16 +29,39 @@ class ScrapingThresholdError(Exception):
 
 
 def dedupe_urls_by_domain(urls: list[str], max_per_domain: int = 2) -> list[str]:
-    """Deduplicate URLs to limit the number per domain."""
+    """Deduplicate URLs by domain, prioritizing high authority links."""
     from urllib.parse import urlparse
     from collections import defaultdict
+    
+    def get_authority_score(url: str) -> int:
+        score = 0
+        url_lower = url.lower()
+        if "docs." in url_lower or "/docs/" in url_lower:
+            score += 50
+        if "reference." in url_lower or "/reference/" in url_lower:
+            score += 40
+        if "github.com" in url_lower or "stackoverflow.com" in url_lower:
+            score += 30
+        if "tutorial" in url_lower or "guide" in url_lower:
+            score += 20
+        if ".edu" in url_lower or ".gov" in url_lower:
+            score += 60
+        return score
+        
+    sorted_urls = sorted(urls, key=get_authority_score, reverse=True)
+    
     domain_counts = defaultdict(int)
     deduped = []
-    for url in urls:
-        domain = urlparse(url).netloc
-        if domain_counts[domain] < max_per_domain:
+    for url in sorted_urls:
+        netloc = urlparse(url).netloc
+        parts = netloc.split('.')
+        # simplistic base domain extraction for deduplication grouping
+        base_domain = ".".join(parts[-2:]) if len(parts) >= 2 else netloc
+        
+        if domain_counts[base_domain] < max_per_domain:
             deduped.append(url)
-            domain_counts[domain] += 1
+            domain_counts[base_domain] += 1
+            
     return deduped
 
 
