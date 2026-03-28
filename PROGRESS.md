@@ -6,13 +6,14 @@
 
 ## ONE-LINE STATUS
 
-Phase 0, Task 0.5, NOT STARTED
+Phase 0, Task 0.2, NOT STARTED
 
 ---
 
 ## WHAT IS COMPLETE AND VERIFIED
 
 Phase 0 (Foundation Stabilization) — IN PROGRESS
+- Task 0.1: Fixed Sandbox Environment Isolation (whitelist-only env) — DONE and VERIFIED.
 - Task 0.NEW-C: Implemented Feature Flags system in config.py — DONE and VERIFIED.
 - Task 0.NEW-B: Implemented cross-platform file locking and atomic writes in eku_store.py — DONE and VERIFIED.
 - Task 0.NEW-A: Created migrations.py and wired into eku_schema.py for v1->v2 upgrades — DONE and VERIFIED.
@@ -33,10 +34,9 @@ Nothing yet.
 
 ## EXACT NEXT ACTION
 
-Add json_mode=False parameter to LLMClient.generate().
-Add FEATURE_FLAGS dict and management functions to agent/config.py.
-Support full set of 8 flags (chromadb_enabled, async_pipeline, etc.) defaulting to False.
-Ensure flag checks raise ValueError for unknown features.on-JSON content.
+Update agent/scraper/html_utils.py to use BeautifulSoup for aggressive HTML stripping.
+Ensure all tags except meaningful text/code are removed.
+Verify that 'Plane Test' data is stored as clean axioms without HTML noise.
 
 ---
 
@@ -76,7 +76,7 @@ No tests run yet.
 |-------|--------|---------------|
 | -2 | COMPLETE ✅ | 4/4 criteria |
 | -1 | COMPLETE ✅ | 1/1 criteria |
-| 0  | IN PROGRESS | 4/37 tests |
+| 0  | IN PROGRESS | 6/37 tests |
 | 1  | NOT STARTED | 0/10 tests |
 | 2+ | NOT STARTED | — |
 
@@ -84,6 +84,6 @@ No tests run yet.
 
 ## AGENT HANDOFF NOTES
 
-Next agent: start with Phase 0 Task 0.5.
+Next agent: start with Phase 0 Task 0.2.
 Read GUARDRAILS.md before touching anything.
-Implement json_mode parameter in LLMClient.
+Fix Scraper HTML Stripping in agent/scraper/html_utils.py.

@@ -150,14 +150,20 @@ class SandboxRunner:
                 code_file.unlink()
 
     def _sandbox_env(self) -> dict[str, str]:
-        """Create a restricted environment for the subprocess."""
-        env = os.environ.copy()
-        # Remove sensitive vars
-        for key in ["OPENAI_API_KEY", "API_KEY", "SECRET", "TOKEN", "PASSWORD"]:
-            env.pop(key, None)
-        # Set sandbox-specific vars
-        env["PYTHONDONTWRITEBYTECODE"] = "1"
-        env["PYTHONUNBUFFERED"] = "1"
+        """Create a minimal restricted environment (whitelist-only).
+        
+        This prevents sensitive information (like API keys) from leaking into
+        the sandbox subprocess.
+        """
+        # Whitelist exactly 6 essential keys for execution
+        env = {
+            "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+            "HOME": os.environ.get("HOME", "/tmp"),
+            "PYTHONPATH": os.environ.get("PYTHONPATH", "."),
+            "LANG": os.environ.get("LANG", "en_US.UTF-8"),
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONUNBUFFERED": "1",
+        }
         return env
 
     def _extract_error_summary(self, stderr: str) -> str:
