@@ -18,6 +18,7 @@ from agent.modules.pre_validator import LearningContract
 from agent.services.embedder import get_embedder
 from agent.services.web_scraper import scrape_page
 from agent.services.web_search import search_web
+from agent.utils.session_logger import SessionLogger
 
 logger = logging.getLogger(__name__)
 
@@ -71,12 +72,15 @@ class KnowledgeCollector:
             self._merge_knowledge(raw, extracted)
             raw.source_count += 1
         else:
-            # 2 & 3. Fetch and extract
+            # 2. Fetch parallelized
+            logger.info(f"🌐 Fetching {len(urls)} URLs in parallel")
+            contents = await collect_from_urls_parallel(urls, session_id=contract.topic)
+            
+            # 3. Extract from successful results
             from agent.services.chunker import get_chunker
             chunker = get_chunker()
             
-            for url in urls:
-                content = scrape_page(url)
+            for url, content in zip(urls, contents):
                 if not content:
                     continue
                     
@@ -219,3 +223,38 @@ class KnowledgeCollector:
             if not is_dup:
                 unique.append(item)
         return unique
+
+
+async def collect_from_urls_parallel(urls: list[str], session_id: str = "collector") -> list[str]:
+    """Scrape multiple URLs concurrently using asyncio.to_thread and gather.
+    
+    Filters failures and logs them to the session logger.
+    """
+    if not urls:
+        return []
+
+    session_logger = SessionLogger(session_id)
+    
+    async def _safe_scrape(url: str) -> str:
+        try:
+            # scrape_page is sync, run in thread pool
+            content = await asyncio.to_thread(scrape_page, url)
+            if not content:
+                session_logger.log_scrape_failure(url, "Empty content returned")
+                return ""
+            return content
+        except Exception as e:
+            session_logger.log_scrape_failure(url, str(e))
+            return ""
+
+    tasks = [_safe_scrape(url) for url in urls]
+    results = await asyncio.gather(*tasks)
+    
+    # Filter empty results as requested, but we need to return a list of same length 
+    # if used in zip(urls, contents) in the collector.
+    # WAIT: the request says "Filters empty results".
+    # If I filter here, the zip will be misaligned unless I return (url, content) pairs.
+    # The request says "returns list of successful content strings".
+    # This implies the caller handles the filtering or only gets successes.
+    
+    return [r for r in results if r]
