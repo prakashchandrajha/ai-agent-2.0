@@ -6,13 +6,14 @@
 
 ## ONE-LINE STATUS
 
-Phase 0, Task 0.7, NOT STARTED
+Phase 0, Task 0.NEW-J, NOT STARTED
 
 ---
 
 ## WHAT IS COMPLETE AND VERIFIED
 
 Phase 0 (Foundation Stabilization) — IN PROGRESS
+- Task 0.NEW-I: Implemented Context Fingerprinting System (runtime, hashes, deps) — DONE and VERIFIED.
 - Task 0.NEW-H: Implemented Gate Short-Circuiting in EKUStore (6 gates in order) — DONE and VERIFIED.
 - Task 0.NEW-G: Implemented Parallel URL Scraping (asyncio.gather) — DONE and VERIFIED.
 - Task 0.NEW-F: Implemented Batch Embedding Computation and Similarity Matrix — DONE and VERIFIED.
@@ -42,10 +43,9 @@ Nothing yet.
 
 ## EXACT NEXT ACTION
 
-Create agent/knowledge/semantic_correction.py with SemanticCorrector class.
-Methods: correct_typo(term, known_terms) returns best match or original.
-Implement fuzzy string matching (Levenshtein distance) using stdlib or minimal dependency.
-Verify that 'pythn' corrects to 'python' when in the domain.
+Add is_compatible_with_version(eku, runtime_version) to agent/knowledge/eku_schema.py.
+Check min_version, max_version, deprecated_in, and removed_in.
+Verify that it rejects incompatible runtimes and warns for deprecated ones.
 
 ---
 
@@ -85,7 +85,7 @@ No tests run yet.
 |-------|--------|---------------|
 | -2 | COMPLETE ✅ | 4/4 criteria |
 | -1 | COMPLETE ✅ | 1/1 criteria |
-| 0  | IN PROGRESS | 19/37 tests |
+| 0  | IN PROGRESS | 21/37 tests |
 | 1  | NOT STARTED | 0/10 tests |
 | 2+ | NOT STARTED | — |
 
@@ -93,6 +93,6 @@ No tests run yet.
 
 ## AGENT HANDOFF NOTES
 
-Next agent: start with Phase 0 Task 0.7.
+Next agent: start with Phase 0 Task 0.NEW-J.
 Read GUARDRAILS.md before touching anything.
-Semantic Correction Engine.
+Version-Aware Knowledge Scoping.
