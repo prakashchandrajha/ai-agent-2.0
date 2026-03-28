@@ -3,6 +3,7 @@
 import logging
 
 import httpx
+import numpy as np
 
 from agent.config import get_settings
 from agent.utils.hardware import AcceleratorType, detect_hardware
@@ -84,6 +85,28 @@ class Embedder:
                 except Exception as e:
                     raise RuntimeError(f"Ollama embedding failed: {e}") from e
         return embeddings
+
+    def embed_batch(self, texts: list[str]) -> np.ndarray:
+        """Embed a batch of texts and return as a numpy array."""
+        embeddings = self.embed_texts(texts)
+        return np.array(embeddings)
+
+    def cosine_similarity_matrix(self, embeddings: np.ndarray) -> np.ndarray:
+        """Compute the full cosine similarity matrix for a set of embeddings.
+        
+        Assumes input is a 2D numpy array of shape (n_texts, dim).
+        If embeddings are normalized, this is a simple dot product.
+        """
+        if embeddings.size == 0:
+            return np.array([[]])
+            
+        # Ensure normalization for cosine similarity calculation
+        norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+        # Avoid division by zero
+        norms[norms == 0] = 1.0
+        norm_embeddings = embeddings / norms
+        
+        return np.dot(norm_embeddings, norm_embeddings.T)
 
 
 _embedder: Embedder | None = None
