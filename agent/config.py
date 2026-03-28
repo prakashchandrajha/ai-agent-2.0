@@ -10,6 +10,30 @@ from functools import lru_cache
 from pathlib import Path
 
 
+FEATURE_FLAGS = {
+    "chromadb_enabled": False,
+    "async_pipeline": False,
+    "adversarial_tests": False,
+    "decay_system": False,
+    "experience_log": False,
+    "multi_language": False,
+    "sandbox_pool": False,
+    "speculative_prefetch": False,
+}
+
+
+def feature_enabled(name: str) -> bool:
+    """Check if a feature is enabled."""
+    return FEATURE_FLAGS.get(name, False)
+
+
+def enable_feature(name: str) -> None:
+    """Enable a feature."""
+    if name not in FEATURE_FLAGS:
+        raise ValueError(f"Unknown feature: {name}")
+    FEATURE_FLAGS[name] = True
+
+
 def _load_dotenv(path: str = ".env") -> None:
     """Minimal .env loader — no external deps."""
     env_path = Path(path)

@@ -13,6 +13,7 @@ Phase 0, Task 0.5, NOT STARTED
 ## WHAT IS COMPLETE AND VERIFIED
 
 Phase 0 (Foundation Stabilization) — IN PROGRESS
+- Task 0.NEW-C: Implemented Feature Flags system in config.py — DONE and VERIFIED.
 - Task 0.NEW-B: Implemented cross-platform file locking and atomic writes in eku_store.py — DONE and VERIFIED.
 - Task 0.NEW-A: Created migrations.py and wired into eku_schema.py for v1->v2 upgrades — DONE and VERIFIED.
 - Task 0.0: Extended EKU schema with 15 new fields and 3 new dataclasses — DONE and VERIFIED.
@@ -33,8 +34,9 @@ Nothing yet.
 ## EXACT NEXT ACTION
 
 Add json_mode=False parameter to LLMClient.generate().
-Update Ollama client to support raw text/code output when requested.
-Verify that the client can return non-JSON content.
+Add FEATURE_FLAGS dict and management functions to agent/config.py.
+Support full set of 8 flags (chromadb_enabled, async_pipeline, etc.) defaulting to False.
+Ensure flag checks raise ValueError for unknown features.on-JSON content.
 
 ---
 
@@ -74,7 +76,7 @@ No tests run yet.
 |-------|--------|---------------|
 | -2 | COMPLETE ✅ | 4/4 criteria |
 | -1 | COMPLETE ✅ | 1/1 criteria |
-| 0  | IN PROGRESS | 3/37 tests |
+| 0  | IN PROGRESS | 4/37 tests |
 | 1  | NOT STARTED | 0/10 tests |
 | 2+ | NOT STARTED | — |
 
