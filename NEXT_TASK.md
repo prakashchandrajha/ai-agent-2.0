@@ -1,10 +1,10 @@
 Phase: 1
-Task ID: 1.2
-Task Name: Create Source Authority Module
-From MASTER_PLAN.md: Phase 1, TASK 1.2
-Exact Action: Create agent/utils/source_authority.py with AUTHORITY_SCORES dict and get_authority(url) function. Official docs get 1.0, community sites get 0.65-0.75, unknown gets 0.50 default.
-Files to touch: agent/utils/source_authority.py only (create new file)
+Task ID: 1.3
+Task Name: Near-Failure Detection
+From MASTER_PLAN.md: Phase 1, TASK 1.3
+Exact Action: Extend SandboxResult in agent/sandbox/runner.py with robustness_score and fragility_flags fields. After execution calculate: NEAR_TIMEOUT if elapsed > 80% of timeout, WARNINGS_PRESENT if stderr non-empty but passed, SUSPICIOUSLY_FAST if elapsed < 5ms and code > 100 chars.
+Files to touch: agent/sandbox/runner.py only
 Done when:
-- get_authority('https://docs.python.org/3/library/list.html') returns 1.0
-- get_authority('https://stackoverflow.com/questions/1') returns 0.65
-- get_authority('https://some-random-blog.com') returns 0.50
+- SandboxResult has robustness_score float field
+- SandboxResult has fragility_flags list field
+- Code that runs near timeout gets NEAR_TIMEOUT flag and robustness_score < 1.0

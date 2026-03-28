@@ -29,6 +29,8 @@ class SandboxResult:
     execution_time_ms: float = 0.0
     timed_out: bool = False
     error_summary: str = ""
+    robustness_score: float = 1.0
+    fragility_flags: list[str] = field(default_factory=list)
 
     @property
     def has_error(self) -> bool:
@@ -115,7 +117,22 @@ class SandboxRunner:
                 stdout = stdout_bytes.decode("utf-8", errors="replace")
                 stderr = stderr_bytes.decode("utf-8", errors="replace")
 
-                passed = proc.returncode == 0 and not stderr.strip()
+                passed = proc.returncode == 0
+
+                flags = []
+                score = 1.0
+
+                if elapsed_ms > (timeout * 1000 * 0.8):
+                    flags.append("NEAR_TIMEOUT")
+                    score -= 0.5
+
+                if passed and stderr.strip():
+                    flags.append("WARNINGS_PRESENT")
+                    score -= 0.2
+
+                if elapsed_ms < 5.0 and len(code) > 100:
+                    flags.append("SUSPICIOUSLY_FAST")
+                    score -= 0.1
 
                 return SandboxResult(
                     stdout=stdout,
@@ -124,6 +141,8 @@ class SandboxRunner:
                     passed=passed,
                     execution_time_ms=elapsed_ms,
                     error_summary=self._extract_error_summary(stderr) if stderr else "",
+                    robustness_score=max(0.0, score),
+                    fragility_flags=flags,
                 )
 
             except asyncio.TimeoutError:
@@ -136,6 +155,8 @@ class SandboxRunner:
                     timed_out=True,
                     execution_time_ms=elapsed_ms,
                     error_summary=f"Timeout after {timeout}s",
+                    robustness_score=0.0,
+                    fragility_flags=["TIMEOUT"],
                 )
 
         except Exception as e:
@@ -143,6 +164,8 @@ class SandboxRunner:
                 stderr=str(e),
                 return_code=1,
                 error_summary=f"Sandbox error: {e}",
+                robustness_score=0.0,
+                fragility_flags=["CRASH"],
             )
         finally:
             # Clean up temp file
