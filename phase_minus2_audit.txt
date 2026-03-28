@@ -1,0 +1,14 @@
+Test 1 (web_search): works
+Test 2 (web_scraper): works
+Test 3 (chunker): works
+Test 4 (embedder): works
+Test 5 (sandbox runner): works
+Test 6 (llm client): works
+
+## LLM BEHAVIOR FINDINGS
+
+- JSON mode is forced ON for all Ollama calls in agent/llm/client.py
+- Model cannot return raw code or plain text — always wraps in JSON
+- This will break Phase 1 Task 1.1 which requires raw code generation
+- Fix needed in Phase 0: LLMClient needs a parameter to disable JSON mode per call
+  Something like: await c.generate(prompt, json_mode=False)
