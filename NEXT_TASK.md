@@ -1,10 +1,8 @@
-Phase: 0
-Task ID: 0.NEW-O
-Task Name: Source URL Deduplication
-From MASTER_PLAN.md: Phase 0, TASK 0.NEW-O
-Exact Action: Add dedupe_urls_by_domain() function to agent/modules/collector.py. Already exists from Task 0.10 — verify it is exported and works correctly. Max 2 URLs per domain, sorted by authority score first.
-Files to touch: agent/modules/collector.py only
-Done when:
-- 3 URLs from same domain → only 2 returned
-- Official docs domain kept over random blog when both present
-- Function is importable from agent.modules.collector
+# NEXT_TASK.md
+Phase: 1
+Task ID: 1.1
+Task Name: Fix Circular Verification
+From MASTER_PLAN.md: Phase 1, TASK 1.1 [CRITICAL]
+Exact Action: Split executor.py test generation into TWO separate LLM calls. Call 1 generates code only. Sandbox runs it and gets REAL output. Call 2 generates assertions FROM the real output. Add CODE_GENERATOR_PROMPT and ASSERTION_GENERATOR_PROMPT to prompts.py.
+Files to touch: agent/modules/executor.py and agent/llm/prompts.py
+Done when: LLM cannot confirm imagined output — assertions only use real sandbox output
