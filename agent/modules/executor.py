@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 
 from agent.knowledge.eku_schema import TestResult
 from agent.llm.helpers import llm_complete_json
-from agent.llm.prompts import TEST_GENERATOR
+from agent.llm.prompts import CODE_GENERATOR_PROMPT, ASSERTION_GENERATOR_PROMPT
 from agent.modules.verifier import VerificationResult
 from agent.sandbox.runner import SandboxResult, get_sandbox
 
@@ -84,7 +84,7 @@ class ExecutionLearner:
                 if not code:
                     continue
 
-                # Run in sandbox
+                # Run in sandbox (Call 1)
                 sandbox_result = await self.sandbox.run(code, language)
 
                 # Classify result
@@ -105,16 +105,43 @@ class ExecutionLearner:
                     test_result.passed = False
                     test_result.error = "TIMEOUT"
                     results.crashes.append(test_result)
-                    logger.warning(f"    ⏰ TIMEOUT: {description}")
-                elif sandbox_result.passed:
-                    results.passed.append(test_result)
-                    logger.info(f"    ✅ PASS: {description}")
+                    logger.warning(f"    ⏰ TIMEOUT (Code Gen): {description}")
+                    continue
                 elif sandbox_result.return_code != 0:
                     results.crashes.append(test_result)
-                    logger.warning(f"    💥 CRASH: {description}")
+                    logger.warning(f"    💥 CRASH (Code Gen): {description}")
+                    continue
+
+                # Call 2: Generate assertions from real output
+                combined_output = sandbox_result.stdout + "\n" + sandbox_result.stderr
+                assertions_code = await self._generate_assertions(raw.topic, description, code, combined_output)
+                
+                # Append assertions to code and run again
+                full_code = code + "\n\n" + assertions_code
+                test_result.code = full_code
+                
+                sandbox_result_2 = await self.sandbox.run(full_code, language)
+                test_result.execution_time_ms += sandbox_result_2.execution_time_ms
+                results.total_execution_time_ms += sandbox_result_2.execution_time_ms
+                
+                test_result.passed = sandbox_result_2.passed
+                test_result.output = sandbox_result_2.stdout[:500]
+                test_result.error = sandbox_result_2.stderr[:500]
+
+                if sandbox_result_2.timed_out:
+                    test_result.passed = False
+                    test_result.error = "TIMEOUT"
+                    results.crashes.append(test_result)
+                    logger.warning(f"    ⏰ TIMEOUT (With Assertions): {description}")
+                elif sandbox_result_2.passed:
+                    results.passed.append(test_result)
+                    logger.info(f"    ✅ PASS: {description}")
+                elif sandbox_result_2.return_code != 0:
+                    results.crashes.append(test_result)
+                    logger.warning(f"    💥 CRASH (With Assertions): {description}")
                 else:
                     results.failed.append(test_result)
-                    logger.warning(f"    ❌ FAIL: {description}")
+                    logger.warning(f"    ❌ FAIL (With Assertions): {description}")
 
         logger.info(
             f"🧪 Execution complete: "
@@ -129,7 +156,17 @@ class ExecutionLearner:
     async def _generate_tests(
         self, topic: str, domain: str, language: str, knowledge: str
     ) -> dict:
-        prompt = TEST_GENERATOR.format(
+        prompt = CODE_GENERATOR_PROMPT.format(
             topic=topic, domain=domain, language=language, knowledge=knowledge
         )
         return await llm_complete_json(prompt)
+
+    async def _generate_assertions(
+        self, topic: str, description: str, code: str, output: str
+    ) -> str:
+        prompt = ASSERTION_GENERATOR_PROMPT.format(
+            topic=topic, description=description, code=code, output=output
+        )
+        from agent.llm.client import get_llm_client
+        client = get_llm_client()
+        return await client.generate(prompt=prompt, temperature=0.0, json_mode=False)

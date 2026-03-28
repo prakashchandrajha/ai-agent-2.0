@@ -121,8 +121,9 @@ Return JSON:
 }}"""
 
 
-TEST_GENERATOR = """You are a test case architect.
-Generate executable test cases to validate understanding of this concept.
+CODE_GENERATOR_PROMPT = """You are a test case architect.
+Generate executable test cases (CODE ONLY, no validation checks) to validate understanding of this concept.
+We will run this code to see what it actually does before writing verification.
 
 Topic: {topic}
 Domain: {domain}
@@ -137,10 +138,24 @@ Generate three categories of test cases as RUNNABLE code:
 
 Return JSON:
 {{
-    "normal": [{{"description": "...", "code": "...", "expected_behavior": "..."}}],
-    "edge": [{{"description": "...", "code": "...", "expected_behavior": "..."}}],
-    "extreme": [{{"description": "...", "code": "...", "expected_behavior": "..."}}]
+    "normal": [{{"description": "...", "code": "..."}}],
+    "edge": [{{"description": "...", "code": "..."}}],
+    "extreme": [{{"description": "...", "code": "..."}}]
 }}"""
+
+
+ASSERTION_GENERATOR_PROMPT = """You are a test case architect.
+We ran the following test code and got this REAL output.
+Generate ASSERTIONS that verify this exact behavior. Output ONLY the assertion code.
+
+Topic: {topic}
+Description: {description}
+Code:
+{code}
+
+Real Execution Output (Stdout & Stderr):
+{output}
+"""
 
 
 FAILURE_ANALYZER = """You are a failure analysis expert.
