@@ -1,3 +1,6 @@
 {"timestamp": "2026-03-28T15:41:13.091235+00:00", "phase": "collection", "event": "scrape_failure", "data": {"url": "http://fail2.com", "reason": "Empty content returned"}}
 {"timestamp": "2026-03-28T15:41:15.353228+00:00", "phase": "collection", "event": "scrape_failure", "data": {"url": "http://fail3.com", "reason": "Empty content returned"}}
 {"timestamp": "2026-03-28T15:41:37.234094+00:00", "phase": "collection", "event": "scrape_failure", "data": {"url": "http://fail1.com", "reason": "Empty content returned"}}
+{"timestamp": "2026-03-28T16:10:21.534019+00:00", "phase": "collection", "event": "scrape_failure", "data": {"url": "http://fail2.com", "reason": "Empty content returned"}}
+{"timestamp": "2026-03-28T16:10:24.092114+00:00", "phase": "collection", "event": "scrape_failure", "data": {"url": "http://fail3.com", "reason": "Empty content returned"}}
+{"timestamp": "2026-03-28T16:10:50.074799+00:00", "phase": "collection", "event": "scrape_failure", "data": {"url": "http://fail1.com", "reason": "Empty content returned"}}
