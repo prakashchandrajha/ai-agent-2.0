@@ -6,13 +6,14 @@
 
 ## ONE-LINE STATUS
 
-Phase 0, Task 0.NEW-L, NOT STARTED
+Phase 0, Task 0.7, NOT STARTED
 
 ---
 
 ## WHAT IS COMPLETE AND VERIFIED
 
 Phase 0 (Foundation Stabilization) — IN PROGRESS
+- Task 0.NEW-L: Implemented Transitive Confidence Calculator (Product of chain) — DONE and VERIFIED.
 - Task 0.NEW-K: Implemented Composition Hazard Registry (5 Python, 2 JS hazards) — DONE and VERIFIED.
 - Task 0.NEW-J: Implemented Version-Aware Knowledge Scoping (min/max/dep/rem checks) — DONE and VERIFIED.
 - Task 0.NEW-I: Implemented Context Fingerprinting System (runtime, hashes, deps) — DONE and VERIFIED.
@@ -45,9 +46,10 @@ Nothing yet.
 
 ## EXACT NEXT ACTION
 
-Add calculate_effective_confidence(eku_id) method to EKUStore.
-Implement confidence decay formula: True Confidence = self.conf * PRODUCT(dep.conf).
-Verify that EKU dependencies properly reduce the effective confidence.
+Create agent/knowledge/semantic_correction.py with SemanticCorrector class.
+Methods: correct_typo(term, known_terms) returns best match or original.
+Implement fuzzy string matching (Levenshtein distance) using stdlib or minimal dependency.
+Verify that 'pythn' corrects to 'python' when in the domain.
 
 ---
 
@@ -87,7 +89,7 @@ No tests run yet.
 |-------|--------|---------------|
 | -2 | COMPLETE ✅ | 4/4 criteria |
 | -1 | COMPLETE ✅ | 1/1 criteria |
-| 0  | IN PROGRESS | 23/37 tests |
+| 0  | IN PROGRESS | 24/37 tests |
 | 1  | NOT STARTED | 0/10 tests |
 | 2+ | NOT STARTED | — |
 
@@ -95,6 +97,6 @@ No tests run yet.
 
 ## AGENT HANDOFF NOTES
 
-Next agent: start with Phase 0 Task 0.NEW-L.
+Next agent: start with Phase 0 Task 0.7.
 Read GUARDRAILS.md before touching anything.
-Transitive Confidence Calculator.
+Semantic Correction Engine.

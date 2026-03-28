@@ -7,29 +7,28 @@
 ## CURRENT TASK
 
 Phase: 0
-Task ID: 0.NEW-L
-Task Name: Transitive Confidence Calculator
-From MASTER_PLAN.md: Phase 0, TASK 0.NEW-L
+Task ID: 0.7
+Task Name: Semantic Correction Engine
+From MASTER_PLAN.md: Phase 0, TASK 0.7
 
 ---
 
 ## EXACT ACTION
 
-Add `calculate_effective_confidence(eku_id)` method to `EKUStore` in `agent/knowledge/eku_store.py`. This method must recursively (or iteratively) calculate the real confidence by multiplying the EKU's raw confidence by the confidences of all its dependencies. Returns tuple `(float, str)` where the string is the chain description (e.g., `"A(0.90) * B(0.80) = 0.72"`).
+Create `agent/knowledge/semantic_correction.py` with `SemanticCorrector` class. Methods: `correct_typo(term, known_terms)` returns the best match from `known_terms` if similarity is high enough, else original. Implement fuzzy string matching (Levenshtein distance) using stdlib or a minimal dependency.
 
 ---
 
 ## FILES TO TOUCH
 
-- agent/knowledge/eku_store.py
+- agent/knowledge/semantic_correction.py only (create new file)
 
 ---
 
 ## DONE WHEN
 
-- [ ] `calculate_effective_confidence` exists in `EKUStore`
-- [ ] Returns `(conf, chain)` where `conf` is correctly multiplied
-- [ ] Returns `(raw_conf, concept)` if no dependencies
+- [ ] `correct_typo('pythn', ['python', 'javascript'])` returns `'python'`
+- [ ] `correct_typo('xyz', ['python', 'javascript'])` returns `'xyz'` (no match)
 - [ ] PROGRESS.md updated
 
 ---
@@ -37,4 +36,4 @@ Add `calculate_effective_confidence(eku_id)` method to `EKUStore` in `agent/know
 ## HOW TO UPDATE THIS FILE WHEN TASK IS COMPLETE
 
 Replace the contents with the next task from MASTER_PLAN.md.
-Next task after this one: Phase 0, TASK 0.7 (Semantic Correction Engine)
+Next task after this one: Phase 0, TASK 0.8 (Adversarial Prompt Guard)

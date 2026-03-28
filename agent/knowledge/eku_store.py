@@ -230,6 +230,48 @@ class EKUStore:
             "domains": list(set(m["domain"] for m in self._index.values())),
         }
 
+    def calculate_effective_confidence(self, eku_id: str) -> tuple[float, str]:
+        """Calculate the real effective confidence considering dependency chain.
+        Returns (effective_confidence, chain_description).
+        
+        Example: A(0.95) -> B(0.90) -> C(0.85)
+        Using C: effective = 0.85 * 0.90 * 0.95 = 0.73
+        """
+        eku = self.load_eku(eku_id)
+        if not eku:
+            return 0.0, f"EKU {eku_id} not found"
+        
+        if not eku.dependencies:
+            return eku.confidence, f"{eku.concept}({eku.confidence:.2f})"
+        
+        # We collect ALL unique dependencies in the chain (BFS)
+        visited = {eku_id}
+        queue = list(eku.dependencies)
+        chain_ekus = [eku]
+        
+        idx = 0
+        while idx < len(queue):
+            dep_id = queue[idx]
+            idx += 1
+            if dep_id in visited:
+                continue
+            visited.add(dep_id)
+            
+            dep_eku = self.load_eku(dep_id)
+            if dep_eku:
+                chain_ekus.append(dep_eku)
+                queue.extend(dep_eku.dependencies)
+        
+        # Calculation: Product of all confidences in the unique chain set
+        effective = 1.0
+        chain_parts = []
+        for reku in chain_ekus:
+            effective *= reku.confidence
+            chain_parts.append(f"{reku.concept}({reku.confidence:.2f})")
+            
+        chain_desc = " * ".join(chain_parts) + f" = {effective:.2f}"
+        return effective, chain_desc
+
     def rollback_eku(self, eku_id: str, dry_run: bool = False) -> list[str]:
         """Evolutionary rollback: delete an EKU and all its downstream dependents.
         
