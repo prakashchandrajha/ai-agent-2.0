@@ -6,13 +6,14 @@
 
 ## ONE-LINE STATUS
 
-Phase 0, Task 0.NEW-J, NOT STARTED
+Phase 0, Task 0.NEW-K, NOT STARTED
 
 ---
 
 ## WHAT IS COMPLETE AND VERIFIED
 
 Phase 0 (Foundation Stabilization) — IN PROGRESS
+- Task 0.NEW-J: Implemented Version-Aware Knowledge Scoping (min/max/dep/rem checks) — DONE and VERIFIED.
 - Task 0.NEW-I: Implemented Context Fingerprinting System (runtime, hashes, deps) — DONE and VERIFIED.
 - Task 0.NEW-H: Implemented Gate Short-Circuiting in EKUStore (6 gates in order) — DONE and VERIFIED.
 - Task 0.NEW-G: Implemented Parallel URL Scraping (asyncio.gather) — DONE and VERIFIED.
@@ -43,9 +44,9 @@ Nothing yet.
 
 ## EXACT NEXT ACTION
 
-Add is_compatible_with_version(eku, runtime_version) to agent/knowledge/eku_schema.py.
-Check min_version, max_version, deprecated_in, and removed_in.
-Verify that it rejects incompatible runtimes and warns for deprecated ones.
+Create agent/knowledge/hazard_registry.py with CompositionHazard dataclass and ALL_HAZARDS list.
+Implement check_composition_hazards(required_concepts) to detect conflicts.
+Include initial Python hazards (dict/list modification during iteration, etc.).
 
 ---
 
@@ -85,7 +86,7 @@ No tests run yet.
 |-------|--------|---------------|
 | -2 | COMPLETE ✅ | 4/4 criteria |
 | -1 | COMPLETE ✅ | 1/1 criteria |
-| 0  | IN PROGRESS | 21/37 tests |
+| 0  | IN PROGRESS | 22/37 tests |
 | 1  | NOT STARTED | 0/10 tests |
 | 2+ | NOT STARTED | — |
 
@@ -93,6 +94,6 @@ No tests run yet.
 
 ## AGENT HANDOFF NOTES
 
-Next agent: start with Phase 0 Task 0.NEW-J.
+Next agent: start with Phase 0 Task 0.NEW-K.
 Read GUARDRAILS.md before touching anything.
-Version-Aware Knowledge Scoping.
+Composition Hazard Registry.

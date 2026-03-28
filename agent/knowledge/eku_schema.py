@@ -414,3 +414,42 @@ class ExecutableKnowledgeUnit:
             eku.gate_diagnostics.append(GateDiagnostic(**t))
 
         return eku
+
+
+def is_compatible_with_version(eku: ExecutableKnowledgeUnit, runtime_version: str) -> tuple[bool, str]:
+    """Check if EKU knowledge applies to the current runtime version.
+
+    Checks min_version, max_version, deprecated_in, and removed_in.
+    """
+    bounds = eku.version_bounds
+    if not bounds:
+        return True, ""
+
+    from packaging.version import Version
+    try:
+        # Clean runtime version: "3.11.2" or "v3.11.2" -> "3.11.2"
+        # We take the first part in case of "3.10.12 (main, ...)"
+        current_str = runtime_version.lstrip("v").split(" ")[0]
+        current = Version(current_str)
+
+        if "min_version" in bounds and bounds["min_version"]:
+            if current < Version(bounds["min_version"]):
+                return False, f"Requires >= {bounds['min_version']}, you have {runtime_version}"
+
+        if "max_version" in bounds and bounds["max_version"]:
+            if current > Version(bounds["max_version"]):
+                return False, f"Only valid up to {bounds['max_version']}, you have {runtime_version}"
+
+        if "removed_in" in bounds and bounds["removed_in"]:
+            if current >= Version(bounds["removed_in"]):
+                return False, f"Removed in {bounds['removed_in']}, you have {runtime_version}"
+
+        if "deprecated_in" in bounds and bounds["deprecated_in"]:
+            if current >= Version(bounds["deprecated_in"]):
+                return True, f"WARNING: Deprecated in {bounds['deprecated_in']} — verify still works"
+
+    except Exception:
+        # If version parsing fails, don't block
+        return True, ""
+
+    return True, ""
