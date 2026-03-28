@@ -16,13 +16,39 @@ from agent.sandbox.runner import SandboxResult, get_sandbox
 logger = logging.getLogger(__name__)
 
 
-@dataclass
 class ExecutionResults:
     """Results of execution-based learning."""
     passed: list[TestResult] = field(default_factory=list)
     failed: list[TestResult] = field(default_factory=list)
     crashes: list[TestResult] = field(default_factory=list)
     total_execution_time_ms: float = 0.0
+
+def verify_assertion_uses_actual_output(assertions: str, actual_output: str) -> bool:
+    """Verify assertions reference the real output not a contradicting value."""
+    import ast
+    try:
+        tree = ast.parse(assertions)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Compare):
+                items = [node.left] + node.comparators
+                for item in items:
+                    if isinstance(item, (ast.Constant, ast.List, ast.Tuple, ast.Dict, ast.Set)):
+                        if isinstance(item, ast.Constant):
+                            if item.value is None or isinstance(item.value, bool):
+                                continue
+                            val_str = str(item.value)
+                        else:
+                            val_str = ast.unparse(item)
+                            
+                        clean_val = "".join(val_str.split())
+                        clean_out = "".join(actual_output.split())
+                        
+                        if len(clean_val) > 1 and clean_val not in clean_out:
+                            return False
+    except Exception:
+        # Unparseable assertions contradict reality by being broken
+        return False
+    return True
 
     @property
     def pass_rate(self) -> float:
@@ -114,7 +140,21 @@ class ExecutionLearner:
 
                 # Call 2: Generate assertions from real output
                 combined_output = sandbox_result.stdout + "\n" + sandbox_result.stderr
-                assertions_code = await self._generate_assertions(raw.topic, description, code, combined_output)
+                max_retries = 3
+                assertions_valid = False
+                assertions_code = ""
+
+                for attempt in range(max_retries):
+                    assertions_code = await self._generate_assertions(raw.topic, description, code, combined_output)
+                    if verify_assertion_uses_actual_output(assertions_code, combined_output):
+                        assertions_valid = True
+                        break
+                    logger.warning(f"    ⚠️ Invalid assertions generated (contradicts output), regenerating... ({attempt+1}/{max_retries})")
+
+                if not assertions_valid:
+                    logger.warning(f"    ❌ Failed to generate valid assertions after {max_retries} attempts.")
+                    results.failed.append(test_result)
+                    continue
                 
                 # Append assertions to code and run again
                 full_code = code + "\n\n" + assertions_code

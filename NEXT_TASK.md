@@ -1,8 +1,9 @@
-# NEXT_TASK.md
 Phase: 1
-Task ID: 1.1
-Task Name: Fix Circular Verification
-From MASTER_PLAN.md: Phase 1, TASK 1.1 [CRITICAL]
-Exact Action: Split executor.py test generation into TWO separate LLM calls. Call 1 generates code only. Sandbox runs it and gets REAL output. Call 2 generates assertions FROM the real output. Add CODE_GENERATOR_PROMPT and ASSERTION_GENERATOR_PROMPT to prompts.py.
-Files to touch: agent/modules/executor.py and agent/llm/prompts.py
-Done when: LLM cannot confirm imagined output — assertions only use real sandbox output
+Task ID: 1.NEW-A
+Task Name: Assertion Independence Verification
+From MASTER_PLAN.md: Phase 1, TASK 1.NEW-A
+Exact Action: Add verify_assertion_uses_actual_output() function to agent/modules/executor.py. After assertion generation, verify assertions reference the real output not a contradicting value. If invalid: log warning and regenerate.
+Files to touch: agent/modules/executor.py only
+Done when:
+- verify_assertion_uses_actual_output(assertions, actual_output) returns True when assertions match output
+- returns False when assertions contradict actual output
