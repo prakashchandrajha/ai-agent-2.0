@@ -5,11 +5,13 @@ Implements the DELAYED STORAGE pattern: nothing stored until it passes all gates
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
 from agent.config import get_settings
 from agent.knowledge.eku_schema import ExecutableKnowledgeUnit
+from agent.utils.file_lock import file_lock, atomic_json_write
 
 logger = logging.getLogger(__name__)
 
@@ -103,24 +105,33 @@ class EKUStore:
     def _save_eku(self, eku: ExecutableKnowledgeUnit) -> None:
         """Save a proven EKU to disk."""
         file_path = self._store_path / f"{eku.id}.json"
-        with open(file_path, "w") as f:
-            json.dump(eku.to_dict(), f, indent=2)
+        atomic_json_write(file_path, eku.to_dict())
 
         # Update index
-        self._index[eku.id] = {
-            "concept": eku.concept,
-            "domain": eku.domain,
-            "topic": eku.topic,
-            "confidence": eku.confidence,
-            "status": eku.verification_status,
-        }
-        self._save_index()
+        with file_lock(str(self._index_path)):
+            self._index = self._load_index_no_lock()  # Safe reload
+            self._index[eku.id] = {
+                "concept": eku.concept,
+                "domain": eku.domain,
+                "topic": eku.topic,
+                "confidence": eku.confidence,
+                "status": eku.verification_status,
+            }
+            # Lock acquired!
+            try:
+                self._save_index_no_lock()
+            except (IOError, OSError) as e:
+                # EACCES and EAGAIN are the expected errors when lock is held
+                logger.error(f"Failed to save index: {e}")
+                raise
 
     def _quarantine_eku(self, eku: ExecutableKnowledgeUnit) -> None:
         """Save a quarantined EKU separately."""
         file_path = self._quarantine_path / f"{eku.id}.json"
-        with open(file_path, "w") as f:
-            json.dump(eku.to_dict(), f, indent=2)
+        
+        with file_lock(str(file_path)):
+            with open(file_path, "w") as f:
+                json.dump(eku.to_dict(), f, indent=2)
 
     def load_eku(self, eku_id: str) -> ExecutableKnowledgeUnit | None:
         """Load an EKU by ID."""
@@ -129,8 +140,10 @@ class EKUStore:
             file_path = self._quarantine_path / f"{eku_id}.json"
         if not file_path.exists():
             return None
-        with open(file_path) as f:
-            return ExecutableKnowledgeUnit.from_dict(json.load(f))
+        
+        with file_lock(str(file_path)):
+            with open(file_path) as f:
+                return ExecutableKnowledgeUnit.from_dict(json.load(f))
 
     def find_by_topic(self, domain: str, topic: str) -> list[ExecutableKnowledgeUnit]:
         """Find all EKUs for a given domain and topic."""
@@ -181,27 +194,42 @@ class EKUStore:
         quarantine_path = self._quarantine_path / f"{eku_id}.json"
         
         if file_path.exists():
-            file_path.unlink()
+            with file_lock(str(file_path)):
+                file_path.unlink()
         if quarantine_path.exists():
-            quarantine_path.unlink()
+            with file_lock(str(quarantine_path)):
+                quarantine_path.unlink()
             
-        if eku_id in self._index:
-            del self._index[eku_id]
-            self._save_index()
+        with file_lock(str(self._index_path)):
+            self._index = self._load_index_no_lock()  # Reload
+            if eku_id in self._index:
+                del self._index[eku_id]
+                self._save_index_no_lock()
             
         logger.warning(f"⏪ Rolled back EKU {eku_id} ({eku.concept})")
 
     # ── Index management ─────────────────────────────────────────
 
     def _load_index(self) -> dict:
+        """Thread-safe index load."""
+        with file_lock(str(self._index_path)):
+            return self._load_index_no_lock()
+
+    def _load_index_no_lock(self) -> dict:
+        """Internal load without locking (caller must lock)."""
         if self._index_path.exists():
             with open(self._index_path) as f:
                 return json.load(f)
         return {}
 
     def _save_index(self) -> None:
-        with open(self._index_path, "w") as f:
-            json.dump(self._index, f, indent=2)
+        """Thread-safe index save."""
+        with file_lock(str(self._index_path)):
+            self._save_index_no_lock()
+
+    def _save_index_no_lock(self) -> None:
+        """Internal save without locking (caller must lock)."""
+        atomic_json_write(self._index_path, self._index)
 
 
 # ── Singleton ────────────────────────────────────────────────────

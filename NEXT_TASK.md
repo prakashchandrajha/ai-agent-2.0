@@ -7,28 +7,28 @@
 ## CURRENT TASK
 
 Phase: 0
-Task ID: 0.NEW-B
-Task Name: File Locking for JSON Stores
-From MASTER_PLAN.md: Phase 0, TASK 0.NEW-B
+Task ID: 0.5
+Task Name: LLMClient non-JSON mode
+From MASTER_PLAN.md: Phase 0, TASK 0.5
 
 ---
 
 ## EXACT ACTION
 
-Implement cross-platform file locking (fcntl for linux, msvcrt for windows) in agent/knowledge/json_store.py. Ensure all read/write operations use context managers for locking. Prevent data corruption during concurrent process access.
+Add `json_mode=True` parameter to `LLMClient.generate()`. When `False`, the client must NOT force JSON format in the Ollama API call. Ensure `agent/llm/client.py` and any relevant adapters are updated.
 
 ---
 
 ## FILES TO TOUCH
 
-- agent/knowledge/json_store.py
+- agent/llm/client.py
 
 ---
 
 ## DONE WHEN
 
-- [ ] agent/knowledge/json_store.py uses file locking
-- [ ] Stress test with 10 concurrent processes writing to the same store passes without data loss
+- [ ] `LLMClient.generate(prompt, json_mode=False)` returns raw text/code
+- [ ] `LLMClient.generate(prompt, json_mode=True)` (default) returns JSON as before
 - [ ] PROGRESS.md updated
 
 ---
@@ -36,4 +36,4 @@ Implement cross-platform file locking (fcntl for linux, msvcrt for windows) in a
 ## HOW TO UPDATE THIS FILE WHEN TASK IS COMPLETE
 
 Replace the contents with the next task from MASTER_PLAN.md.
-Next task after this one: Phase 0, TASK 0.5 (LLMClient non-JSON mode)
+Next task after this one: Phase 0, TASK 0.6 (Verify ChromaDB Connectivity)
