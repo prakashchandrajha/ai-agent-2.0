@@ -1,10 +1,10 @@
 Phase: 0
-Task ID: 0.NEW-M
-Task Name: Smart Chunking by Content Type
-From MASTER_PLAN.md: Phase 0, TASK 0.NEW-M
-Exact Action: Add smart_chunk() function to agent/services/chunker.py. Detects content type from source URL and applies different chunking strategy: API/reference URLs get small chunks (max 200 tokens), tutorial URLs get large chunks (max 600 tokens), default gets overlapping chunks (max 400 tokens, overlap 100).
-Files to touch: agent/services/chunker.py only
+Task ID: 0.10
+Task Name: Fix Scraper Failure Tracking
+From MASTER_PLAN.md: Phase 0, TASK 0.10
+Exact Action: Fix collect() in agent/modules/collector.py to abort when scraping failure rate exceeds 50% and zero successes. Must raise ScrapingThresholdError with clear message. Also deduplicate URLs by domain before scraping using dedupe_urls_by_domain().
+Files to touch: agent/modules/collector.py only
 Done when:
-- smart_chunk(content, 'https://docs.python.org/3/library/functions.html') uses small chunks
-- smart_chunk(content, 'https://realpython.com/python-tutorial/') uses large chunks
-- smart_chunk(content, 'https://random-blog.com') uses default chunks
+- If 3 out of 3 URLs fail, ScrapingThresholdError is raised
+- If 1 out of 3 URLs succeed, no error raised
+- dedupe_urls_by_domain() exists and limits to max 2 per domain

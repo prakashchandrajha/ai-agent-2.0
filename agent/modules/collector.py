@@ -23,6 +23,25 @@ from agent.utils.session_logger import SessionLogger
 logger = logging.getLogger(__name__)
 
 
+class ScrapingThresholdError(Exception):
+    """Raised when scraping failure rate exceeds threshold and zero successes."""
+    pass
+
+
+def dedupe_urls_by_domain(urls: list[str], max_per_domain: int = 2) -> list[str]:
+    """Deduplicate URLs to limit the number per domain."""
+    from urllib.parse import urlparse
+    from collections import defaultdict
+    domain_counts = defaultdict(int)
+    deduped = []
+    for url in urls:
+        domain = urlparse(url).netloc
+        if domain_counts[domain] < max_per_domain:
+            deduped.append(url)
+            domain_counts[domain] += 1
+    return deduped
+
+
 @dataclass
 class RawKnowledge:
     """Raw extracted knowledge before verification."""
@@ -62,6 +81,9 @@ class KnowledgeCollector:
         # 1. Get URLs via Scrapling search
         search_query = f"{contract.resolved_domain} {contract.topic}"
         urls = search_web(search_query, max_results=self.settings.max_sources)
+        
+        if urls:
+            urls = dedupe_urls_by_domain(urls)
         
         if not urls:
             logger.warning("No URLs found, falling back to LLM internal knowledge.")
@@ -250,11 +272,11 @@ async def collect_from_urls_parallel(urls: list[str], session_id: str = "collect
     tasks = [_safe_scrape(url) for url in urls]
     results = await asyncio.gather(*tasks)
     
-    # Filter empty results as requested, but we need to return a list of same length 
-    # if used in zip(urls, contents) in the collector.
-    # WAIT: the request says "Filters empty results".
-    # If I filter here, the zip will be misaligned unless I return (url, content) pairs.
-    # The request says "returns list of successful content strings".
-    # This implies the caller handles the filtering or only gets successes.
+    successes = [r for r in results if r]
+    success_count = len(successes)
+    failure_count = len(urls) - success_count
     
-    return [r for r in results if r]
+    if len(urls) > 0 and (failure_count / len(urls)) > 0.5 and success_count == 0:
+        raise ScrapingThresholdError(f"Scraping aborted: {failure_count} failures, 0 successes.")
+        
+    return successes
