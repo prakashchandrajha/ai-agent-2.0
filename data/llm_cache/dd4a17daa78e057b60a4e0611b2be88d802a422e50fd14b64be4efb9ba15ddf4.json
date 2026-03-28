@@ -1,0 +1,6 @@
+{
+  "model": "phi3:medium",
+  "prompt": "test prompt",
+  "response": "test response",
+  "timestamp": 1774692812.9688344
+}
