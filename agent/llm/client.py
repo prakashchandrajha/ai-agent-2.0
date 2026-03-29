@@ -220,3 +220,63 @@ def get_llm_client() -> LLMClient:
     if _llm_client is None:
         _llm_client = LLMClient()
     return _llm_client
+
+
+# ── MASTER_PLAN 1.NEW-G: Smart Retry with Differentiated Prompts ─────────
+
+async def generate_with_smart_retry(
+    prompt: str,
+    max_retries: int = 3,
+    validate_fn=None,
+) -> dict | None:
+    """Generate a JSON response with differentiated retry prompts.
+
+    Same prompt at temperature=0 always gives the same failure.
+    Each retry appends a unique context block so the LLM gets a fresh
+    starting point.
+
+    Args:
+        prompt:      Original prompt requesting a JSON response.
+        max_retries: Maximum attempts (including the first).
+        validate_fn: Optional callable(dict) -> str|None.
+                     Return an error string if invalid, None if valid.
+
+    Returns:
+        Parsed dict on success, or None if all attempts fail.
+    """
+    from agent.llm.helpers import extract_json
+
+    client = get_llm_client()
+    last_error: str = ""
+
+    for attempt in range(max_retries):
+        active_prompt = prompt
+
+        if attempt > 0:
+            active_prompt = (
+                f"{prompt}\n\n"
+                f"[RETRY ATTEMPT {attempt + 1}]\n"
+                f"Your previous response failed validation.\n"
+                f"Error from previous attempt: {last_error}\n\n"
+                "Please try a different approach:\n"
+                "- Be more explicit with JSON formatting\n"
+                "- Ensure all required fields are present\n"
+                "- Double-check your response is valid JSON only\n"
+            )
+
+        raw = await client.generate(prompt=active_prompt, temperature=0.0, json_mode=True)
+        result = extract_json(raw)
+
+        if result is None:
+            last_error = "Response was not valid JSON"
+            continue
+
+        if validate_fn is not None:
+            error = validate_fn(result)
+            if error:
+                last_error = error
+                continue
+
+        return result
+
+    return None

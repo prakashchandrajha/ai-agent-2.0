@@ -1,11 +1,12 @@
-Phase: 1
-Task ID: 1.NEW-B
-Task Name: Sandbox Warm Pool
-From MASTER_PLAN.md: Phase 1, TASK 1.NEW-B
-Exact Action: Create agent/sandbox/pool.py with SandboxPool class. Pre-warm 3 sandbox runners. execute() takes warm runner, replaces it with fresh after use. Enable via feature flag sandbox_pool.
-Files to touch: agent/sandbox/pool.py only (create new file)
+Phase: 2
+Task ID: 2.1
+Task Name: Invariant Inheritance Graph
+From MASTER_PLAN.md: Phase 2, TASK 2.1
+Exact Action: Create agent/knowledge/invariant_graph.py with InvariantGraph class. Key methods: add_eku(), propagate_correction(), inherit_edge_cases(). When eku A's invariant is corrected, flag linked EKUs for re-verification. When 3+ links exist, inherit edge cases from linked EKUs.
+Files to touch: agent/knowledge/invariant_graph.py only (create new file)
 Done when:
-- SandboxPool initializes with 3 runners
-- execute() returns result and replaces used runner
-- handle_all_crashed() recreates all 3 runners
-- Works with feature_enabled('sandbox_pool') flag
+- InvariantGraph class exists with add_eku(), propagate_correction(), inherit_edge_cases()
+- add_eku() finds invariant links with all existing EKUs
+- propagate_correction() flags linked EKUs for re-verification
+- inherit_edge_cases() inherits from 3+ linked EKUs
+- Phase 1 exit criteria all green before this starts

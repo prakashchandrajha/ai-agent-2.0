@@ -7,6 +7,7 @@ and semantic embeddings to deduplicate it.
 
 import asyncio
 import logging
+import re
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -21,6 +22,36 @@ from agent.services.web_search import search_web
 from agent.utils.session_logger import SessionLogger
 
 logger = logging.getLogger(__name__)
+
+# ── MASTER_PLAN Task 1.6: Quality-Weighted Dedup Winner ──────────────────
+
+def _quality_score(text: str) -> float:
+    """Higher score = more precise, more useful knowledge.
+
+    Prioritises information density over verbosity:
+    - Counts precision markers (types, return values, exception names, constants)
+    - Penalises text that is longer than 80 chars without more markers
+
+    MASTER_PLAN example:
+      "append modifies list in-place, returns None"  → HIGH score
+      "The append method is a built-in list method that..." → LOW score
+    """
+    words = text.split()
+    if not words:
+        return 0.0
+
+    precision_count = len(re.findall(
+        r"O\(|returns |raises |None|True|False|\d+"
+        r"|TypeError|ValueError|IndexError|AttributeError",
+        text,
+    ))
+    density = precision_count / len(words)
+
+    # Penalise verbosity: text > 80 chars pays a penalty proportional to excess
+    verbosity_penalty = min(1.0, 80 / len(text)) if len(text) > 80 else 1.0
+
+    return density * verbosity_penalty
+
 
 
 class ScrapingThresholdError(Exception):
@@ -195,35 +226,38 @@ class KnowledgeCollector:
         return raw
 
     def _semantic_dedup(self, items: list[str]) -> list[str]:
-        """Remove near-duplicate strings using Cosine Similarity > Threshold."""
+        """Remove near-duplicate strings using Cosine Similarity > Threshold.
+
+        Winner = highest _quality_score (most precise), not longest string.
+        """
         if len(items) <= 1:
             return items
 
         try:
             embedder = get_embedder()
-            
+
             # Embed all items in batch
             vectors = embedder.embed_texts(items)
             vectors = np.array(vectors)
-            
+
             # Compute cosine similarity matrix (embeddings are normalized)
             similarity = np.dot(vectors, vectors.T)
-            
+
             unique_indices = []
             for i in range(len(items)):
                 is_duplicate = False
                 for j in unique_indices:
-                    # Threshold: 0.92 default
+                    # Threshold: entropy_threshold default
                     if similarity[i, j] >= self.settings.entropy_threshold:
                         is_duplicate = True
-                        # Replace if current is longer/more detailed than existing
-                        if len(items[i]) > len(items[j]):
+                        # Replace with winner if current is more precise
+                        if _quality_score(items[i]) > _quality_score(items[j]):
                             unique_indices[unique_indices.index(j)] = i
                         break
-                
+
                 if not is_duplicate:
                     unique_indices.append(i)
-                    
+
             return [items[i] for i in unique_indices]
 
         except Exception as e:
@@ -231,7 +265,10 @@ class KnowledgeCollector:
             return self._text_dedup(items)
 
     def _text_dedup(self, items: list[str]) -> list[str]:
-        """Simple word-overlap similarity (Jaccard) fallback."""
+        """Simple word-overlap similarity (Jaccard) fallback.
+
+        Winner = highest _quality_score (most precise), not longest string.
+        """
         if len(items) <= 1:
             return items
         unique = [items[0]]
@@ -245,10 +282,11 @@ class KnowledgeCollector:
                 intersection = words_a & words_b
                 union = words_a | words_b
                 similarity = len(intersection) / len(union)
-                
+
                 if similarity > 0.8:
                     is_dup = True
-                    if len(item) > len(existing):
+                    # Replace with winner if current is more precise
+                    if _quality_score(item) > _quality_score(existing):
                         unique[unique.index(existing)] = item
                     break
             if not is_dup:

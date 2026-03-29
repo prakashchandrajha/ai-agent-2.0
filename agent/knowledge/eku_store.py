@@ -16,6 +16,66 @@ from agent.utils.file_lock import file_lock, atomic_json_write
 
 logger = logging.getLogger(__name__)
 
+# ── MASTER_PLAN 1.NEW-E: Quarantine with Re-Learning Hints ──────────────
+GATE_FIX_HINTS: dict[str, list[str]] = {
+    "_gate_not_trivial": [
+        "EKU is missing concept, topic or definition — ensure extraction produced output",
+        "Try: python -m agent learn {concept} --sources official",
+    ],
+    "_gate_entropy": [
+        "Knowledge confidence too low: python -m agent similar {concept}",
+        "Consider if this is genuinely new or an alias for existing knowledge",
+    ],
+    "_gate_tests_pass": [
+        "Try: MAX_LEARNING_ITERATIONS=5 python -m agent learn {concept}",
+        "Try: python -m agent learn {concept} --sources official",
+        "Check prerequisites: python -m agent deps {concept}",
+    ],
+    "_gate_not_overfitted": [
+        "Knowledge too narrow — learn broader topic first",
+        "Try: python -m agent suggest-prereqs {concept}",
+    ],
+    "_gate_no_contradictions": [
+        "Run more iterations to improve confidence: MAX_LEARNING_ITERATIONS=5",
+        "Inspect existing EKU: python -m agent inspect {concept}",
+    ],
+    "_gate_mastery_contract": [
+        "Re-learn with more iterations: MAX_LEARNING_ITERATIONS=5",
+        "Add specific documentation URL: python -m agent learn {concept} --url <url>",
+    ],
+}
+
+
+# ── MASTER_PLAN 1.NEW-D: Graduated Gate Thresholds ─────────────────────
+_BASE_THRESHOLDS: dict[str, float | int] = {
+    "tests_pass":     0.70,
+    "entropy":        0.85,
+    "not_trivial":    0.30,  # definition length ratio
+    "not_overfitted": 2,    # distinct passing categories (int, no scaling)
+}
+
+
+def get_gate_threshold(
+    gate_name: str,
+    iteration: int = 1,
+    is_relearn: bool = False,
+) -> float | int:
+    """Return the effective gate threshold given context.
+
+    - First attempt (iteration==1, not relearn): slightly lenient (-0.10).
+    - Re-learning (replacing existing EKU): stricter (+0.10).
+    - Otherwise: base threshold.
+    """
+    base = _BASE_THRESHOLDS.get(gate_name, 0.70)
+    if isinstance(base, int):
+        return base  # Integer thresholds don't scale
+    if is_relearn:
+        return min(base + 0.10, 0.99)
+    if iteration == 1:
+        return max(base - 0.10, 0.0)
+    return base
+
+
 
 class EKUStore:
     """Persistent storage for Executable Knowledge Units.
@@ -95,21 +155,76 @@ class EKUStore:
 
     def _gate_not_trivial(self, eku: ExecutableKnowledgeUnit) -> bool:
         """Basic checks: Must have concept, topic, and definition."""
+        threshold = get_gate_threshold("not_trivial")
         if not eku.concept or not eku.topic or not eku.definition:
+            eku.gate_diagnostics.append(GateDiagnostic(
+                gate_name="not_trivial",
+                failure_reason="EKU missing concept, topic, or definition",
+                actual_value=0.0,
+                required_value=float(threshold),
+                suggested_fix=GATE_FIX_HINTS["_gate_not_trivial"][0],
+                is_retryable=True,
+            ))
             return False
         if len(eku.definition.strip()) < 10:
+            eku.gate_diagnostics.append(GateDiagnostic(
+                gate_name="not_trivial",
+                failure_reason=f"Definition too short ({len(eku.definition.strip())} chars, need >= 10)",
+                actual_value=float(len(eku.definition.strip())),
+                required_value=10.0,
+                suggested_fix=GATE_FIX_HINTS["_gate_not_trivial"][1],
+                is_retryable=True,
+            ))
             return False
         return True
 
     def _gate_entropy(self, eku: ExecutableKnowledgeUnit) -> bool:
         """Check if EKU meets the required entropy/confidence threshold."""
-        return eku.confidence >= self.settings.entropy_threshold
+        threshold = get_gate_threshold("entropy")
+        if eku.confidence < threshold:
+            eku.gate_diagnostics.append(GateDiagnostic(
+                gate_name="entropy",
+                failure_reason=(
+                    f"Confidence {eku.confidence:.2f} below threshold {threshold:.2f}"
+                ),
+                actual_value=eku.confidence,
+                required_value=float(threshold),
+                suggested_fix=GATE_FIX_HINTS["_gate_entropy"][0],
+                is_retryable=True,
+            ))
+            return False
+        return True
 
     def _gate_tests_pass(self, eku: ExecutableKnowledgeUnit) -> bool:
         """Tests must have a reasonable pass rate."""
+        threshold = get_gate_threshold("tests_pass")
         if not eku.test_results:
+            eku.gate_diagnostics.append(GateDiagnostic(
+                gate_name="tests_pass",
+                failure_reason="No test results recorded",
+                actual_value=0.0,
+                required_value=float(threshold),
+                suggested_fix=GATE_FIX_HINTS["_gate_tests_pass"][0],
+                is_retryable=True,
+            ))
             return False
-        return eku.test_pass_rate >= 0.7
+        pass_rate = eku.test_pass_rate
+        if pass_rate < threshold:
+            total = len(eku.test_results)
+            passed = sum(1 for t in eku.test_results if t.passed)
+            eku.gate_diagnostics.append(GateDiagnostic(
+                gate_name="tests_pass",
+                failure_reason=(
+                    f"Only {passed}/{total} tests passed "
+                    f"({pass_rate:.0%}). Required: >= {threshold:.0%}"
+                ),
+                actual_value=pass_rate,
+                required_value=float(threshold),
+                suggested_fix=GATE_FIX_HINTS["_gate_tests_pass"][0],
+                is_retryable=True,
+            ))
+            return False
+        return True
 
     def _gate_failures_understood(self, eku: ExecutableKnowledgeUnit) -> bool:
         """Every critical failure must have a prevention rule."""
@@ -122,45 +237,85 @@ class EKUStore:
 
     async def _gate_no_contradictions(self, eku: ExecutableKnowledgeUnit) -> bool:
         """New EKU must not contradict existing knowledge.
-        
+
         Reject if existing EKU for same topic has confidence > new + 0.15.
         If new is equal or better, allow replacement and bump version.
         """
         existing = self.find_by_topic(eku.domain, eku.topic)
         if not existing:
             return True
-            
+
         best_existing = max(existing, key=lambda e: e.confidence)
-        
+
         if best_existing.confidence > eku.confidence + 0.15:
             eku.gate_diagnostics.append(GateDiagnostic(
                 gate_name="no_contradictions",
-                failure_reason=f"Existing EKU is significantly better ({best_existing.confidence:.2f} vs {eku.confidence:.2f})",
+                failure_reason=(
+                    f"Existing EKU is significantly better "
+                    f"({best_existing.confidence:.2f} vs {eku.confidence:.2f})"
+                ),
                 actual_value=eku.confidence,
                 required_value=best_existing.confidence,
-                suggested_fix="Run more iterations to improve confidence: MAX_LEARNING_ITERATIONS=5",
+                suggested_fix=GATE_FIX_HINTS["_gate_no_contradictions"][0],
                 is_retryable=True,
             ))
             return False
-                
+
         # New EKU is equal or better — allow replacement, bump version
         eku.version = best_existing.version + 1
         return True
 
     def _gate_not_overfitted(self, eku: ExecutableKnowledgeUnit) -> bool:
-        """Must pass in at least N distinct contexts."""
+        """Must pass in at least N distinct test categories (not_overfitted)."""
+        required = int(get_gate_threshold("not_overfitted"))
         if not eku.test_results:
+            eku.gate_diagnostics.append(GateDiagnostic(
+                gate_name="not_overfitted",
+                failure_reason="No test results — cannot verify category diversity",
+                actual_value=0.0,
+                required_value=float(required),
+                suggested_fix=GATE_FIX_HINTS["_gate_not_overfitted"][0],
+                is_retryable=True,
+            ))
             return False
-        # Count distinct passing test categories
-        passing_categories = set(
-            t.category for t in eku.test_results if t.passed
-        )
-        return len(passing_categories) >= 2  # At least normal + edge
+        passing_categories = {t.category for t in eku.test_results if t.passed}
+        if len(passing_categories) < required:
+            eku.gate_diagnostics.append(GateDiagnostic(
+                gate_name="not_overfitted",
+                failure_reason=(
+                    f"Only {len(passing_categories)} distinct category(ies) passed "
+                    f"({passing_categories}). Need >= {required}."
+                ),
+                actual_value=float(len(passing_categories)),
+                required_value=float(required),
+                suggested_fix=GATE_FIX_HINTS["_gate_not_overfitted"][0],
+                is_retryable=True,
+            ))
+            return False
+        return True
 
     async def _gate_mastery_contract(self, eku: ExecutableKnowledgeUnit) -> bool:
-        """Check if the knowledge meets the mastery contract criteria."""
-        # Simple implementation: failure if there are explicitly unmet criteria
-        return len(eku.mastery_criteria_unmet) == 0
+        """Check every criterion in mastery_criteria_unmet; emit diagnostic if any unmet."""
+        unmet = list(eku.mastery_criteria_unmet)  # already populated by compressor
+
+        # Also check that at least 1 criterion is met
+        if not eku.mastery_criteria_met and not unmet:
+            # No contract at all — trivially pass (contract not generated yet)
+            return True
+
+        if unmet:
+            eku.gate_diagnostics.append(GateDiagnostic(
+                gate_name="mastery_contract",
+                failure_reason=f"Unmet criteria: {unmet}",
+                actual_value=float(len(eku.mastery_criteria_met)),
+                required_value=float(
+                    len(eku.mastery_criteria_met) + len(unmet)
+                ),
+                suggested_fix=GATE_FIX_HINTS["_gate_mastery_contract"][0],
+                is_retryable=True,
+            ))
+            return False
+        return True
 
     # ── CRUD operations ──────────────────────────────────────────
 

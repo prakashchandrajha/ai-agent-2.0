@@ -28,3 +28,9 @@
 {"timestamp": "2026-03-29T06:41:42.887414+00:00", "phase": "collection", "event": "scrape_failure", "data": {"url": "http://fail2.com", "reason": "Empty content returned"}}
 {"timestamp": "2026-03-29T06:41:45.144851+00:00", "phase": "collection", "event": "scrape_failure", "data": {"url": "http://fail3.com", "reason": "Empty content returned"}}
 {"timestamp": "2026-03-29T06:42:06.009435+00:00", "phase": "collection", "event": "scrape_failure", "data": {"url": "http://fail1.com", "reason": "Empty content returned"}}
+{"timestamp": "2026-03-29T06:54:54.022877+00:00", "phase": "collection", "event": "scrape_failure", "data": {"url": "http://fail2.com", "reason": "Empty content returned"}}
+{"timestamp": "2026-03-29T06:54:56.938925+00:00", "phase": "collection", "event": "scrape_failure", "data": {"url": "http://fail3.com", "reason": "Empty content returned"}}
+{"timestamp": "2026-03-29T06:55:19.461050+00:00", "phase": "collection", "event": "scrape_failure", "data": {"url": "http://fail1.com", "reason": "Empty content returned"}}
+{"timestamp": "2026-03-29T07:04:38.494330+00:00", "phase": "collection", "event": "scrape_failure", "data": {"url": "http://fail2.com", "reason": "Empty content returned"}}
+{"timestamp": "2026-03-29T07:04:41.348997+00:00", "phase": "collection", "event": "scrape_failure", "data": {"url": "http://fail3.com", "reason": "Empty content returned"}}
+{"timestamp": "2026-03-29T07:05:01.828852+00:00", "phase": "collection", "event": "scrape_failure", "data": {"url": "http://fail1.com", "reason": "Empty content returned"}}

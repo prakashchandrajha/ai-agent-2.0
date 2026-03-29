@@ -5,6 +5,8 @@ FailureKnowledgeUnits — the agent's experience memory.
 """
 
 import logging
+import re
+from collections import defaultdict
 
 from agent.knowledge.eku_schema import FailureKnowledgeUnit, TestResult
 from agent.llm.helpers import llm_complete_json
@@ -12,6 +14,63 @@ from agent.llm.prompts import FAILURE_ANALYZER
 from agent.modules.executor import ExecutionResults
 
 logger = logging.getLogger(__name__)
+
+# ── MASTER_PLAN 1.NEW-H: Failure Pattern Clustering ───────────────────
+FAILURE_PATTERNS: dict[str, str] = {
+    "type_error":      r"TypeError:.*(?:NoneType|'int'|'str'|'list'|'dict')",
+    "attribute_error": r"AttributeError:.*has no attribute",
+    "import_error":    r"ModuleNotFoundError|ImportError",
+    "timeout":         r"TimeoutError|timed out",
+    "assertion":       r"AssertionError",
+    "index_error":     r"IndexError",
+    "key_error":       r"KeyError",
+    "runtime_error":   r"RuntimeError",
+}
+
+
+def cluster_failures(failures: list) -> dict[str, list]:
+    """Group failures by root-cause pattern.
+
+    Args:
+        failures: List of failure dicts with an 'error_message' key,
+                  or any objects with an .error attribute.
+
+    Returns:
+        Dict mapping pattern_name → list of failures.
+    """
+    clusters: dict[str, list] = defaultdict(list)
+
+    for failure in failures:
+        error_msg = (
+            failure.get("error_message", "")
+            if isinstance(failure, dict)
+            else getattr(failure, "error", "") or ""
+        )
+        matched = False
+        for pattern_name, regex in FAILURE_PATTERNS.items():
+            if re.search(regex, error_msg, re.IGNORECASE):
+                clusters[pattern_name].append(failure)
+                matched = True
+                break
+        if not matched:
+            clusters["unknown"].append(failure)
+
+    return dict(clusters)
+
+
+def get_root_cause_summary(clusters: dict[str, list]) -> str:
+    """Human-readable summary of what's failing and why."""
+    if not clusters:
+        return "No failures recorded."
+
+    dominant_name, dominant_list = max(
+        clusters.items(), key=lambda kv: len(kv[1])
+    )
+    total = sum(len(v) for v in clusters.values())
+    return (
+        f"Primary failure pattern: {dominant_name} "
+        f"({len(dominant_list)}/{total} failures)"
+    )
 
 
 class FailureAnalyzer:

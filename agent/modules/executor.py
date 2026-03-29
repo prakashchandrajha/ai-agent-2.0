@@ -16,6 +16,73 @@ from agent.sandbox.runner import SandboxResult, get_sandbox
 
 logger = logging.getLogger(__name__)
 
+# ── MASTER_PLAN Task 1.NEW-C: Test Category Balancing ──────────────────────
+
+TEST_REQUIREMENTS: dict[str, dict[str, int]] = {
+    "normal":  {"min": 3, "max": 4},   # Happy-path — deterministic
+    "edge":    {"min": 3, "max": 4},   # Boundary / None / empty
+    "extreme": {"min": 2, "max": 3},   # Adversarial / wrong types / huge input
+}
+
+CATEGORY_TEMPERATURES: dict[str, float] = {
+    "normal":  0.0,   # Same happy path every time
+    "edge":    0.3,   # Some variation — find different edges
+    "extreme": 0.5,   # High variation — creativity needed
+}
+
+
+def generate_balanced_tests(
+    concept: str,
+    tests_by_category: dict[str, list],
+    session_logger=None,
+) -> list:
+    """Validate and flatten per-category tests, enforcing min/max.
+
+    Args:
+        concept: The concept being tested (for log messages).
+        tests_by_category: Dict mapping category → list of test dicts,
+            as returned by the LLM test-generation prompt.
+        session_logger: Optional SessionLogger — receives a warning event
+            when a category has fewer tests than its minimum.
+
+    Returns:
+        Flat list of test dicts, each annotated with 'category'.
+    """
+    balanced: list = []
+
+    for category, reqs in TEST_REQUIREMENTS.items():
+        category_tests = tests_by_category.get(category, [])
+
+        # Warn when below minimum — do NOT crash; some concepts have few edge cases
+        if len(category_tests) < reqs["min"]:
+            msg = (
+                f"Insufficient {category} test coverage for '{concept}': "
+                f"generated {len(category_tests)}, needed {reqs['min']}"
+            )
+            logger.warning("    ⚠️  %s", msg)
+            if session_logger:
+                try:
+                    session_logger.log(
+                        "execution",
+                        "insufficient_test_coverage",
+                        {
+                            "category": category,
+                            "generated": len(category_tests),
+                            "needed": reqs["min"],
+                            "concept": concept,
+                        },
+                    )
+                except Exception:
+                    pass
+
+        # Cap at maximum
+        for test in category_tests[: reqs["max"]]:
+            test["category"] = category  # Ensure category tag is present
+            balanced.append(test)
+
+    return balanced
+
+
 
 @dataclass
 class ExecutionResults:
@@ -211,12 +278,71 @@ class ExecutionLearner:
 
         return results
 
-    async def _generate_tests(
-        self, topic: str, domain: str, language: str, knowledge: str
-    ) -> dict:
-        prompt = CODE_GENERATOR_PROMPT.format(
-            topic=topic, domain=domain, language=language, knowledge=knowledge
+# ── MASTER_PLAN Task 1.8: Temperature Stratification (build_test_gen_prompt) ─────
+
+def build_test_gen_prompt(
+    concept: str,
+    category: str,
+    knowledge: str,
+    already_tested: list[str] | None = None,
+) -> str:
+    """Build a per-category test generation prompt.
+
+    On iteration 2+, injects an 'avoid' section so the LLM explores
+    untested territory instead of repeating the same happy-path tests.
+
+    Args:
+        concept:         The topic/concept under test.
+        category:        'normal', 'edge', or 'extreme'.
+        knowledge:       JSON-serialised knowledge summary.
+        already_tested:  List of test descriptions from previous iterations.
+
+    Returns:
+        Full prompt string to send to the LLM.
+    """
+    from agent.llm.prompts import CODE_GENERATOR_PROMPT  # lazy import avoids cycles
+
+    avoid_section = ""
+    if already_tested:
+        avoid_lines = "\n".join(f"- {t}" for t in already_tested)
+        avoid_section = (
+            f"\n\nDo NOT generate tests similar to:\n{avoid_lines}\n"
+            "Focus on untested scenarios and edge cases not yet covered."
         )
+
+    base = CODE_GENERATOR_PROMPT.format(
+        topic=concept,
+        domain="",          # filled by caller when available
+        language="python",  # overridden by caller
+        knowledge=knowledge,
+    )
+    return base + avoid_section
+
+
+    async def _generate_tests(
+        self,
+        topic: str,
+        domain: str,
+        language: str,
+        knowledge: str,
+        already_tested: list[str] | None = None,
+    ) -> dict:
+        """Generate per-category test cases.
+
+        On iteration 2+ (already_tested is non-empty), injects an avoid
+        section via build_test_gen_prompt() so the model explores new ground.
+        """
+        if already_tested:
+            prompt = build_test_gen_prompt(
+                concept=topic,
+                category="all",
+                knowledge=knowledge,
+                already_tested=already_tested,
+            )
+        else:
+            prompt = CODE_GENERATOR_PROMPT.format(
+                topic=topic, domain=domain, language=language, knowledge=knowledge
+            )
         return await llm_complete_json(prompt)
 
     async def _generate_assertions(

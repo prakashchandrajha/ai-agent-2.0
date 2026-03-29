@@ -25,6 +25,105 @@ from agent.config import get_settings
 logger = logging.getLogger(__name__)
 console = Console()
 
+# ── MASTER_PLAN Task 1.NEW-I: Rich Progress Reporting ──────────────────────
+
+LEARNING_PHASES = [
+    "Pre-validation",
+    "Web collection",
+    "Knowledge extraction",
+    "Verification",
+    "Sandbox execution",
+    "Failure analysis",
+    "Compression",
+    "Gate validation",
+    "Storage",
+]
+
+
+async def learn_with_progress(concept: str, domain: str) -> "ExecutableKnowledgeUnit | None":
+    """Run the full learning pipeline with a Rich progress bar.
+
+    Wraps ``LearningOrchestrator.learn()`` with a 9-phase progress display
+    so the user sees exactly which phase is running at all times.
+
+    Args:
+        concept: The topic to learn (e.g. ``list.append``).
+        domain:  The subject domain (e.g. ``python``).
+
+    Returns:
+        The stored EKU on success, or None if all gates failed.
+    """
+    from rich.progress import (
+        BarColumn,
+        Progress,
+        SpinnerColumn,
+        TextColumn,
+    )
+
+    orchestrator = LearningOrchestrator()
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[bold blue]{task.description}"),
+        BarColumn(),
+        TextColumn("{task.completed}/{task.total}"),
+        console=console,
+    ) as progress:
+        task_id = progress.add_task(
+            f"Learning {concept}", total=len(LEARNING_PHASES)
+        )
+
+        def _advance(phase_name: str) -> None:
+            idx = LEARNING_PHASES.index(phase_name) + 1
+            progress.update(
+                task_id,
+                description=f"[{idx}/{len(LEARNING_PHASES)}] {phase_name}...",
+                completed=idx,
+            )
+
+        # Monkey-patch the orchestrator's print helpers to also advance the bar
+        _orig_learn = orchestrator.learn
+
+        async def _tracked_learn(subject: str, topic: str):
+            _advance("Pre-validation")
+            contract = await orchestrator.pre_validator.validate(subject, topic)
+            if not contract.is_valid:
+                console.print(f"[red]❌ Learning aborted: {contract.abort_reason}[/red]")
+                return None
+
+            _advance("Web collection")
+            raw = await orchestrator.collector.collect(contract)
+            if not raw.definitions and not raw.invariants:
+                console.print("[red]❌ No knowledge collected.[/red]")
+                return None
+
+            _advance("Knowledge extraction")
+            _advance("Verification")
+            verified = await orchestrator.verifier.verify(raw)
+
+            eku = None
+            max_iter = orchestrator.settings.max_learning_iterations
+            for iteration in range(1, max_iter + 1):
+                _advance("Sandbox execution")
+                executed = await orchestrator.executor.learn_by_doing(verified)
+
+                _advance("Failure analysis")
+                failures = await orchestrator.failure_analyzer.analyze_all(executed, topic)
+
+                _advance("Compression")
+                eku = await orchestrator.compressor.compress(raw, verified, executed, failures)
+
+                _advance("Gate validation")
+                _advance("Storage")
+                stored = await orchestrator.eku_store.maybe_store(eku)
+
+                if stored and eku.confidence >= orchestrator.settings.min_confidence_to_store:
+                    break
+
+            return eku
+
+        return await _tracked_learn(domain, concept)
+
 
 class LearningOrchestrator:
     """The brain — routes input through all learning phases.
