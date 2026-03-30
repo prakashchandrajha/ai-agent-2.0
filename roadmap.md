@@ -3,7 +3,7 @@
 ## Compiled: 2026-03-30
 ## Goal: AI agent that thinks, plans, codes, debugs, and builds like a real senior CS engineer.
 ## Can work on any project. Any language. Any size. Any situation.
-
+Autonomous
 ---
 
 # HOW TO READ THIS DOCUMENT
